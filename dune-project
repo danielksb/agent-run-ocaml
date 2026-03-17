@@ -20,7 +20,8 @@
  (synopsis "CLI-based LLM agent runner")
  (description "CLI-based LLM agent runner supporting OpenAI and Gemini APIs")
  (depends
-  (ocaml (>= 5.4)))
+  (ocaml (>= 5.4))
+  (ppx_deriving_yojson (>= 3.10)))
  (tags
   ("ai" "cli" "llm")))
 

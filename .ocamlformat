@@ -1,0 +1,4 @@
+profile = ocamlformat
+wrap-comments = true
+line-endings = lf
+

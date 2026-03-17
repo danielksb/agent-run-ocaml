@@ -1,2 +1,5 @@
 (library
- (name agent_run))
+ (name agent_run)
+ (libraries cohttp-lwt-unix ppx_deriving_yojson)
+ (preprocess
+  (pps ppx_deriving_yojson)))
