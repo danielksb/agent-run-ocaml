@@ -2,13 +2,15 @@ open Agent_run
 
 module RunRequest (A : Agent.AGENT) = struct
   let run prompt =
-    let agent = A.create () in
-    let res = A.send_request agent prompt |> Lwt_main.run in
+    let res =
+      Result.bind (A.create ()) (fun agent ->
+        A.send_request agent prompt |> Lwt_main.run)
+    in
     match res with
     | Error error ->
         Printf.fprintf stderr "ERROR: %s\n" error.message
-    | Ok {response; _} ->
-        print_endline response
+    | Ok response ->
+        print_endline response.response
 end
 
 let () =

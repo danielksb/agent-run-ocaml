@@ -30,14 +30,11 @@ module OpenAiAgent : Agent.AGENT = struct
   type t = {api_key: string; default_model: string; default_base_url: string}
 
   let create () =
-    let api_key =
       match Sys.getenv_opt "OPENAI_API_KEY" with
-      | Some key -> key
-      | None -> failwith "OPENAI_API_KEY environment variable not set"
-    in
-    { api_key
-    ; default_model= "gpt-4o-mini"
-    ; default_base_url= "https://api.openai.com" }
+      | Some api_key -> Ok { api_key
+      ; default_model= "gpt-4o-mini"
+      ; default_base_url= "https://api.openai.com" }
+      | None -> Error Agent.{ message= "OPENAI_API_KEY environment variable not set" }
 
   let parse_response response =
     response |> Yojson.Safe.from_string |> response_of_yojson
