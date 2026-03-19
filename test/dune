@@ -1,3 +1,4 @@
 (test
- (name test_agent_run)
- (libraries agent_run))
+ (name test_openai_agent)
+ (libraries agent_run alcotest)
+ (deps (source_tree data)))

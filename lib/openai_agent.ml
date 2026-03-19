@@ -22,58 +22,64 @@ type function_call =
   ; arguments: string }
 [@@deriving yojson {strict= false}]
 
-type response =
-  {id: string; error: Yojson.Safe.t option; output: response_output_message list}
+type response_error = {message: string} [@@deriving yojson {strict= false}]
+
+type response = {id: string; output: response_output_message list}
 [@@deriving yojson {strict= false}]
 
-module OpenAiAgent : Agent.AGENT = struct
+module MakeOpenAiAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   type t = {api_key: string; default_model: string; default_base_url: string}
 
+  let create_with_options api_key =
+    { api_key
+    ; default_model= "gpt-4o-mini"
+    ; default_base_url= "https://api.openai.com" }
+
   let create () =
-      match Sys.getenv_opt "OPENAI_API_KEY" with
-      | Some api_key -> Ok { api_key
-      ; default_model= "gpt-4o-mini"
-      ; default_base_url= "https://api.openai.com" }
-      | None -> Error Agent.{ message= "OPENAI_API_KEY environment variable not set" }
+    match Sys.getenv_opt "OPENAI_API_KEY" with
+    | Some api_key ->
+        Ok (create_with_options api_key)
+    | None ->
+        Error Agent.{message= "OPENAI_API_KEY environment variable not set"}
 
-  let parse_response response =
-    response |> Yojson.Safe.from_string |> response_of_yojson
-
-  let response_output response =
-    let res = parse_response response in
-    match res with
-    | Error error ->
-        Error Agent.{message= error}
-    | Ok {error= Some error_obj; _} ->
-        Error Agent.{message= Yojson.Safe.to_string error_obj}
-    | Ok {output= []; _} ->
-        Error Agent.{message= "No output"}
-    | Ok {output= msg :: _; _} -> (
-      match msg.content with
-      | [] ->
-          Error Agent.{message= "No content in message"}
-      | text :: _ ->
-          Ok Agent.{response= text.text} )
+  let response_output response_body =
+    let json = response_body |> Yojson.Safe.from_string in
+    let error = Yojson.Safe.Util.member "error" json in
+    match error with
+    | `Null -> (
+      match response_of_yojson json with
+      | Error error ->
+          Error Agent.{message= "Json parsing error: " ^ error}
+      | Ok {output= []} ->
+          Error Agent.{message= "No output"}
+      | Ok {output= msg :: _; _} -> (
+        match msg.content with
+        | [] ->
+            Error Agent.{message= "No content in message"}
+        | text :: _ ->
+            Ok Agent.{response= text.text} ) )
+    | _ -> (
+      match response_error_of_yojson error with
+      | Error error ->
+          Error Agent.{message= "Json parsing error: " ^ error}
+      | Ok {message} ->
+          Error Agent.{message} )
 
   let send_request agent prompt =
     let headers =
-      Cohttp.Header.of_list
-        [ ("Content-Type", "application/json")
-        ; ("Authorization", "Bearer " ^ agent.api_key) ]
+      [ ("Content-Type", "application/json")
+      ; ("Authorization", "Bearer " ^ agent.api_key) ]
     in
     let body =
       {model= default_model; input= prompt}
-      |> request_to_yojson |> Yojson.Safe.to_string |> Cohttp_lwt.Body.of_string
+      |> request_to_yojson |> Yojson.Safe.to_string
     in
     let url = default_base_url ^ "/v1/responses" in
-    Cohttp_lwt_unix.Client.post ~body ~headers (Uri.of_string url)
-    >>= fun (resp, body) ->
-    let code = Cohttp.Response.status resp |> Cohttp.Code.code_of_status in
+    Http.post ~url ~headers ~body
+    >|= fun (code, body_str) ->
     Printf.printf "Response code: %d\n" code ;
-    Printf.printf "Headers: %s\n"
-      (Cohttp.Response.headers resp |> Cohttp.Header.to_string) ;
-    body |> Cohttp_lwt.Body.to_string
-    >|= fun rawTextBody ->
-    Printf.printf "Body: %s\n" rawTextBody ;
-    response_output rawTextBody
+    Printf.printf "Body: %s\n" body_str ;
+    response_output body_str
 end
+
+module OpenAiAgent = MakeOpenAiAgent (Agent.RealHttpClient)

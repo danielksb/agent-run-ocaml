@@ -4,7 +4,7 @@ module RunRequest (A : Agent.AGENT) = struct
   let run prompt =
     let res =
       Result.bind (A.create ()) (fun agent ->
-        A.send_request agent prompt |> Lwt_main.run)
+          A.send_request agent prompt |> Lwt_main.run )
     in
     match res with
     | Error error ->
