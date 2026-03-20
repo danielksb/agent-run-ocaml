@@ -10,15 +10,7 @@ module MakeOllamaAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
 
   let create_with_options host = {host; model= "llama3.2"}
 
-  let create () =
-    let host =
-      match Sys.getenv_opt "OLLAMA_HOST" with
-      | Some h ->
-          h
-      | None ->
-          "http://localhost:11434"
-    in
-    Ok (create_with_options host)
+  let create () = Ok (create_with_options "http://localhost:11434")
 
   let response_output response_body =
     let json = response_body |> Yojson.Safe.from_string in

@@ -1,5 +1,5 @@
 (library
  (name agent_run)
- (libraries cohttp-lwt-unix yojson)
+ (libraries cohttp-lwt-unix yojson toml)
  (preprocess
   (pps ppx_deriving_yojson ppx_deriving.show ppx_deriving.eq)))

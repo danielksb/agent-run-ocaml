@@ -22,6 +22,7 @@
  (depends
   (ocaml (>= 5.4))
   (ppx_deriving_yojson (>= 3.10))
+  toml
   (alcotest :with-test))
  (tags
   ("ai" "cli" "llm")))
