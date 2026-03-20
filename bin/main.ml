@@ -21,9 +21,9 @@ let usage () =
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI:\n" ;
   Printf.eprintf "  GEMINI_API_KEY - API key for Gemini:\n"
 
-type config = {prompt: string option; vendor: string}
+type parameters = {prompt: string option; vendor: string}
 
-let create_config () =
+let create_params () =
   let default_config = {prompt= None; vendor= "openai"} in
   let rec loop argv config =
     match argv with
@@ -37,10 +37,18 @@ let create_config () =
   loop (Array.to_list Sys.argv |> List.drop 1) default_config
 
 let () =
-  let config = create_config () in
-  match config.prompt with
-  | Some prompt ->
-      let module Run = RunRequest (Openai_agent.OpenAiAgent) in
-      Run.run prompt
-  | None ->
+  let params = create_params () in
+  match params with
+  | {prompt= None; _} ->
       usage () ; exit 1
+  | {prompt= Some prompt} -> (
+    match params.vendor with
+    | "openai" ->
+        let module Run = RunRequest (Openai_agent.OpenAiAgent) in
+        Run.run prompt
+    | "gemini" ->
+        let module Run = RunRequest (Gemini_agent.GeminiAgent) in
+        Run.run prompt
+    | unknown ->
+        Printf.eprintf "ERROR: unknown vendor \"%s\"\n" unknown ;
+        exit 1 )
