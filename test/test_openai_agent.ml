@@ -27,13 +27,13 @@ module MockHttpClient : Agent.HTTP_CLIENT = struct
     Lwt.return (200, mock_response)
 end
 
-module TestOpenAiAgent = MakeOpenAiAgent (MockHttpClient)
-
 module MockHttpClientError : Agent.HTTP_CLIENT = struct
   let post ~url:_ ~headers:_ ~body:_ =
     let mock_response = read_file error_data_path in
     Lwt.return (401, mock_response)
 end
+
+module TestOpenAiAgent = MakeOpenAiAgent (MockHttpClient)
 
 let test_request_success () =
   let agent = TestOpenAiAgent.create_with_options "TEST_KEY" in
@@ -73,4 +73,3 @@ let () =
             test_request_success
         ; Alcotest.test_case "parses error response" `Quick test_request_error
         ] ) ]
-
