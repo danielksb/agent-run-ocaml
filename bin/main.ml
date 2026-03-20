@@ -14,15 +14,16 @@ module RunRequest (A : Agent.AGENT) = struct
         print_endline response.response
 end
 
-let usage () = Printf.fprintf stderr "Usage:\n agent-run PROMPT\n"
+let usage () =
+  Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
+  Printf.eprintf "Usage: agent-run <prompt>\n\n" ;
+  Printf.eprintf "Environment variables:\n" ;
+  Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI:\n"
 
 let () =
-  let prompt = if Array.length Sys.argv > 1 then Some Sys.argv.(1) else None in
-  match prompt with
-  | None ->
-      Printf.fprintf stderr "ERROR: No prompt received\n" ;
-      usage () ;
-      exit 1
-  | Some prompt ->
+  match Array.to_list Sys.argv with
+  | [_; prompt] ->
       let module Run = RunRequest (Openai_agent.OpenAiAgent) in
       Run.run prompt
+  | _ ->
+      usage () ; exit 1
