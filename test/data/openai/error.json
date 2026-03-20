@@ -1,6 +1,6 @@
 {
     "error": {
-        "message": "Incorrect API key provided: TEST. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "message": "API key not valid. Please pass a valid API key.",
         "type": "invalid_request_error",
         "param": null,
         "code": "invalid_api_key"

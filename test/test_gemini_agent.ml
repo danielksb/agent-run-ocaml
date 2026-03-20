@@ -1,9 +1,9 @@
 open Agent_run
-open Openai_agent
+open Gemini_agent
 
-let response_data_path = "data/openai/response.json"
+let response_data_path = "data/gemini/response.json"
 
-let error_data_path = "data/openai/error.json"
+let error_data_path = "data/gemini/error.json"
 
 (** reads the entire file at path into a string *)
 let read_file path =
@@ -33,12 +33,12 @@ module MockHttpClientError : Agent.HTTP_CLIENT = struct
     Lwt.return (401, mock_response)
 end
 
-module TestOpenAiAgent = MakeOpenAiAgent (MockHttpClient)
+module TestGeminiAgent = MakeGeminiAgent (MockHttpClient)
 
 let test_request_success () =
-  let agent = TestOpenAiAgent.create_with_options "TEST_KEY" in
+  let agent = TestGeminiAgent.create_with_options "TEST_KEY" in
   let actual_response =
-    TestOpenAiAgent.send_request agent "Here is a prompt" |> Lwt_main.run
+    TestGeminiAgent.send_request agent "Here is a prompt" |> Lwt_main.run
   in
   let expected_text =
     "In a peaceful grove beneath a silver moon, a unicorn named Lumina \
@@ -53,10 +53,10 @@ let test_request_success () =
     "result must be successful" expected_response actual_response
 
 let test_request_error () =
-  let module TestOpenAiAgentError = MakeOpenAiAgent (MockHttpClientError) in
-  let agent = TestOpenAiAgentError.create_with_options "TEST_KEY" in
+  let module TestGeminiAgentError = MakeGeminiAgent (MockHttpClientError) in
+  let agent = TestGeminiAgentError.create_with_options "TEST_KEY" in
   let actual_response =
-    TestOpenAiAgentError.send_request agent "Here is a prompt" |> Lwt_main.run
+    TestGeminiAgentError.send_request agent "Here is a prompt" |> Lwt_main.run
   in
   let expected_text = "API key not valid. Please pass a valid API key." in
   let expected_response = Error Agent.{message= expected_text} in
@@ -64,6 +64,6 @@ let test_request_error () =
     "result must be an error" expected_response actual_response
 
 let tests =
-  ( "openai_agent"
+  ( "gemini_agent"
   , [ Alcotest.test_case "parses successful response" `Quick test_request_success
     ; Alcotest.test_case "parses error response" `Quick test_request_error ] )

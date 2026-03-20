@@ -1,9 +1,5 @@
 open Lwt
 
-let default_model = "gpt-4o-mini"
-
-let default_base_url = "https://api.openai.com"
-
 type request = {model: string; input: string} [@@deriving yojson]
 
 type response_output_text =
@@ -28,12 +24,10 @@ type response = {id: string; output: response_output_message list}
 [@@deriving yojson {strict= false}]
 
 module MakeOpenAiAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
-  type t = {api_key: string; default_model: string; default_base_url: string}
+  type t = {api_key: string; model: string; base_url: string}
 
   let create_with_options api_key =
-    { api_key
-    ; default_model= "gpt-4o-mini"
-    ; default_base_url= "https://api.openai.com" }
+    {api_key; model= "gpt-4o-mini"; base_url= "https://api.openai.com"}
 
   let create () =
     match Sys.getenv_opt "OPENAI_API_KEY" with
@@ -71,10 +65,10 @@ module MakeOpenAiAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
       ; ("Authorization", "Bearer " ^ agent.api_key) ]
     in
     let body =
-      {model= default_model; input= prompt}
+      {model= agent.model; input= prompt}
       |> request_to_yojson |> Yojson.Safe.to_string
     in
-    let url = default_base_url ^ "/v1/responses" in
+    let url = agent.base_url ^ "/v1/responses" in
     Http.post ~url ~headers ~body
     >|= fun (code, body_str) ->
     Printf.printf "Response code: %d\n" code ;

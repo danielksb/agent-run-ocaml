@@ -1,0 +1,31 @@
+{
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "In a peaceful grove beneath a silver moon, a unicorn named Lumina discovered a hidden pool that reflected the stars. As she dipped her horn into the water, the pool began to shimmer, revealing a pathway to a magical realm of endless night skies. Filled with wonder, Lumina whispered a wish for all who dream to find their own hidden magic, and as she glanced back, her hoofprints sparkled like stardust.",
+              "thoughtSignature": "EuYGCuMGAb4+9vtM"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 8,
+      "candidatesTokenCount": 9,
+      "totalTokenCount": 231,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 8
+        }
+      ],
+      "thoughtsTokenCount": 214
+    },
+    "modelVersion": "gemini-3-flash-preview",
+    "responseId": "VJ39acCqLaaaakhhkssvuAo"
+  }
