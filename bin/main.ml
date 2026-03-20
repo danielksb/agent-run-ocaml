@@ -21,34 +21,49 @@ let usage () =
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI:\n" ;
   Printf.eprintf "  GEMINI_API_KEY - API key for Gemini:\n"
 
-type parameters = {prompt: string option; vendor: string}
+type vendor = OpenAi | Gemini
+
+type config = {vendor_name: string}
+
+type parameters = {prompt: string option; config: config}
 
 let create_params () =
-  let default_config = {prompt= None; vendor= "openai"} in
-  let rec loop argv config =
+  let default_params = {prompt= None; config= {vendor_name= "openai"}} in
+  let rec loop argv params =
     match argv with
     | ("--vendor" | "-v") :: vendor :: rest ->
-        loop rest {config with vendor}
+        loop rest {params with config= {vendor_name= vendor}}
     | prompt :: rest ->
-        loop rest {config with prompt= Some prompt}
+        loop rest {params with prompt= Some prompt}
     | [] ->
-        config
+        params
   in
-  loop (Array.to_list Sys.argv |> List.drop 1) default_config
+  loop (Array.to_list Sys.argv |> List.drop 1) default_params
+
+let parse_vendor str =
+  match str with "openai" -> Some OpenAi | "gemini" -> Some Gemini | _ -> None
+
+let run vendor prompt =
+  match vendor with
+  | OpenAi ->
+      let module Run = RunRequest (Openai_agent.OpenAiAgent) in
+      Run.run prompt
+  | Gemini ->
+      let module Run = RunRequest (Gemini_agent.GeminiAgent) in
+      Run.run prompt
+
+let run_with_vendor config prompt =
+  match parse_vendor config.vendor_name with
+  | Some vendor ->
+      run vendor prompt
+  | None ->
+      Printf.eprintf "ERROR: unknown vendor \"%s\"\n" config.vendor_name ;
+      exit 1
 
 let () =
   let params = create_params () in
   match params with
   | {prompt= None; _} ->
       usage () ; exit 1
-  | {prompt= Some prompt} -> (
-    match params.vendor with
-    | "openai" ->
-        let module Run = RunRequest (Openai_agent.OpenAiAgent) in
-        Run.run prompt
-    | "gemini" ->
-        let module Run = RunRequest (Gemini_agent.GeminiAgent) in
-        Run.run prompt
-    | unknown ->
-        Printf.eprintf "ERROR: unknown vendor \"%s\"\n" unknown ;
-        exit 1 )
+  | {prompt= Some prompt; config} ->
+      run_with_vendor config prompt
