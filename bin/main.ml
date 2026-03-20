@@ -19,9 +19,10 @@ let usage () =
   Printf.eprintf "Usage: agent-run <prompt>\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI:\n" ;
-  Printf.eprintf "  GEMINI_API_KEY - API key for Gemini:\n"
+  Printf.eprintf "  GEMINI_API_KEY - API key for Gemini:\n" ;
+  Printf.eprintf "  OLLAMA_HOST    - Ollama server URL (default: http://localhost:11434):\n"
 
-type vendor = OpenAi | Gemini
+type vendor = OpenAi | Gemini | Ollama
 
 type config = {vendor_name: string}
 
@@ -41,7 +42,15 @@ let create_params () =
   loop (Array.to_list Sys.argv |> List.drop 1) default_params
 
 let parse_vendor str =
-  match str with "openai" -> Some OpenAi | "gemini" -> Some Gemini | _ -> None
+  match str with
+  | "openai" ->
+      Some OpenAi
+  | "gemini" ->
+      Some Gemini
+  | "ollama" ->
+      Some Ollama
+  | _ ->
+      None
 
 let run vendor prompt =
   match vendor with
@@ -50,6 +59,9 @@ let run vendor prompt =
       Run.run prompt
   | Gemini ->
       let module Run = RunRequest (Gemini_agent.GeminiAgent) in
+      Run.run prompt
+  | Ollama ->
+      let module Run = RunRequest (Ollama_agent.OllamaAgent) in
       Run.run prompt
 
 let run_with_vendor config prompt =
