@@ -1,14 +1,101 @@
-open Lwt
+(** Identity converters so [@@deriving yojson] can handle raw JSON values. *)
+type json = Yojson.Safe.t
 
-type request_message = {role: string; content: string} [@@deriving yojson]
+let json_to_yojson (x : json) = x
 
-type request = {model: string; messages: request_message list; stream: bool}
-[@@deriving yojson]
+let json_of_yojson (x : Yojson.Safe.t) : (json, string) result = Ok x
 
-type response_message = {role: string; content: string}
+type ollama_message =
+  | User of string
+  | Assistant of {content: string; tool_calls: Agent.tool_call list}
+  | ToolResult of Agent.tool_result
+
+type tool_call_function = {name: string; arguments: json}
+[@@deriving yojson {strict= false}]
+
+type tool_call = {function_: tool_call_function [@key "function"]}
+[@@deriving yojson {strict= false}]
+
+type response_message =
+  { role: string
+  ; content: string [@default ""]
+  ; tool_calls: tool_call list [@default []] }
 [@@deriving yojson {strict= false}]
 
 type response = {message: response_message} [@@deriving yojson {strict= false}]
+
+let tool_to_yojson (t : Tool.t) =
+  `Assoc
+    [ ("type", `String "function")
+    ; ( "function"
+      , `Assoc
+          [ ("name", `String t.name)
+          ; ("description", `String t.description)
+          ; ("parameters", Tool.parameters_to_yojson t.parameters) ] ) ]
+
+let message_to_yojson = function
+  | User content ->
+      `Assoc [("role", `String "user"); ("content", `String content)]
+  | Assistant {content; tool_calls} ->
+      let tc_json =
+        List.mapi
+          (fun i (tc : Agent.tool_call) ->
+            `Assoc
+              [ ("type", `String "function")
+              ; ( "function"
+                , `Assoc
+                    [ ("index", `Int i)
+                    ; ("name", `String tc.name)
+                    ; ("arguments", tc.arguments) ] ) ] )
+          tool_calls
+      in
+      `Assoc
+        [ ("role", `String "assistant")
+        ; ("content", `String content)
+        ; ("tool_calls", `List tc_json) ]
+  | ToolResult (tr : Agent.tool_result) ->
+      `Assoc
+        [ ("role", `String "tool")
+        ; ("tool_name", `String tr.name)
+        ; ("content", `String tr.content) ]
+
+let build_request model messages tools =
+  let msgs_json = List.map message_to_yojson messages in
+  let tools_json = List.map tool_to_yojson tools in
+  `Assoc
+    [ ("model", `String model)
+    ; ("messages", `List msgs_json)
+    ; ("stream", `Bool false)
+    ; ("tools", `List tools_json) ]
+
+let parse_response body =
+  try
+    let json = Yojson.Safe.from_string body in
+    let open Yojson.Safe.Util in
+    match member "error" json with
+    | `String msg ->
+        Agent.ErrorResponse msg
+    | `Null -> (
+      match response_of_yojson json with
+      | Error e ->
+          Agent.ErrorResponse ("Json parsing error: " ^ e)
+      | Ok resp ->
+          let calls =
+            List.map
+              (fun (tc : tool_call) ->
+                Agent.
+                  { name= tc.function_.name
+                  ; arguments= tc.function_.arguments
+                  ; id= None } )
+              resp.message.tool_calls
+          in
+          if calls = [] then Agent.TextResponse resp.message.content
+          else
+            Agent.ToolCallResponse
+              {content= resp.message.content; tool_calls= calls} )
+    | _ ->
+        Agent.ErrorResponse "Unknown error format"
+  with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
 module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   type t = {host: string; model: string}
@@ -17,33 +104,22 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
 
   let create () = Ok (create_with_options "http://localhost:11434")
 
-  let response_output response_body =
-    let json = response_body |> Yojson.Safe.from_string in
-    let error = Yojson.Safe.Util.member "error" json in
-    match error with
-    | `Null -> (
-      match response_of_yojson json with
-      | Error error ->
-          Error Agent.{message= "Json parsing error: " ^ error}
-      | Ok response ->
-          Ok Agent.{response= response.message.content} )
-    | `String message ->
-        Error Agent.{message}
-    | _ ->
-        Error Agent.{message= "Unknown error format"}
-
-  let send_request agent prompt =
+  let agent_loop agent prompt =
+    let tools = Tool_registry.tools () in
     let headers = [("Content-Type", "application/json")] in
-    let body =
-      { model= agent.model
-      ; messages= [{role= "user"; content= prompt}]
-      ; stream= false }
-      |> request_to_yojson |> Yojson.Safe.to_string
-    in
     let url = agent.host ^ "/api/chat" in
-    Http.post ~url ~headers ~body
-    >|= fun (code, body_str) ->
-    Printf.printf "Response code: %d\n" code ;
-    Printf.printf "Body: %s\n" body_str ;
-    response_output body_str
+    let fns : ollama_message Agent.agent_loop_fns =
+      { initial_messages= (fun p -> [User p])
+      ; build_request_body=
+          (fun messages ->
+            build_request agent.model messages tools |> Yojson.Safe.to_string )
+      ; parse_response
+      ; append_assistant=
+          (fun messages content tool_calls ->
+            messages @ [Assistant {content; tool_calls}] )
+      ; append_tool_result= (fun messages tr -> messages @ [ToolResult tr]) }
+    in
+    Agent.run_agent_loop ~post:Http.post ~url ~headers fns prompt
+
+  let send_request = agent_loop
 end

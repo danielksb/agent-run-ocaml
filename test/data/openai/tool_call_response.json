@@ -1,0 +1,16 @@
+{
+    "id": "resp_test_tool_call",
+    "object": "response",
+    "created_at": 1741294021,
+    "status": "completed",
+    "output": [
+        {
+            "type": "function_call",
+            "id": "fc_test_123",
+            "call_id": "call_test_abc",
+            "name": "add",
+            "arguments": "{\"a\":11434,\"b\":12341}",
+            "status": "completed"
+        }
+    ]
+}

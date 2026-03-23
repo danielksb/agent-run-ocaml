@@ -1,17 +1,17 @@
 open Agentlib
 
-let run_agent (type a) (module A : Agent.AGENT with type t = a)
-    (agent_result : (a, Agent.agent_error) result) prompt =
-  let res =
-    Result.bind agent_result (fun agent ->
-        A.send_request agent prompt |> Lwt_main.run )
-  in
-  match res with
-  | Error error ->
+let handle_result = function
+  | Error (error : Agent.agent_error) ->
       Printf.fprintf stderr "ERROR: %s\n" error.message ;
       exit 1
-  | Ok response ->
+  | Ok (response : Agent.agent_response) ->
       print_endline response.response
+
+let run_agent (type a) (module A : Agent.AGENT with type t = a)
+    (agent_result : (a, Agent.agent_error) result) prompt =
+  Result.bind agent_result (fun agent ->
+      A.agent_loop agent prompt |> Lwt_main.run )
+  |> handle_result
 
 let usage () =
   Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
@@ -73,10 +73,10 @@ let run vendor app_config prompt =
   | Gemini ->
       run_agent (module GeminiAgent) (GeminiAgent.create ()) prompt
   | Ollama ->
-      run_agent
-        (module OllamaAgent)
-        (Ok (OllamaAgent.create_with_options app_config.Config.ollama.url))
-        prompt
+      let agent =
+        OllamaAgent.create_with_options app_config.Config.ollama.url
+      in
+      run_agent (module OllamaAgent) (Ok agent) prompt
 
 let run_with_params params prompt =
   let config = Config.load params.config_path in
@@ -91,6 +91,8 @@ let () =
   let all_params = parse_params () in
   match all_params with
   | {prompt= None; _} ->
-      usage () ; exit 1
+      Printf.eprintf "ERROR: no prompt was given\n" ;
+      usage () ;
+      exit 1
   | {prompt= Some prompt; params} ->
       run_with_params params prompt

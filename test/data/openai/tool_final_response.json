@@ -1,0 +1,20 @@
+{
+    "id": "resp_test_final",
+    "object": "response",
+    "created_at": 1741294022,
+    "status": "completed",
+    "output": [
+        {
+            "type": "message",
+            "id": "msg_test_456",
+            "status": "completed",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "output_text",
+                    "text": "The result of (11434 + 12341) * 412 is 9,795,300."
+                }
+            ]
+        }
+    ]
+}

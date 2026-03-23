@@ -1,4 +1,5 @@
 (test
  (name test_suite)
  (libraries agentlib alcotest)
- (deps (source_tree data)))
+ (deps
+  (source_tree data)))

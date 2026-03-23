@@ -27,6 +27,12 @@ module Make
 
       val error_path : string
       (** path to file with HTTP error response *)
+
+      val tool_call_response_path : string
+      (** path to file with tool-call HTTP response *)
+
+      val tool_final_response_path : string
+      (** path to file with final text HTTP response after tool execution *)
     end) =
 struct
   module MockHttpClient : Agent.HTTP_CLIENT = struct
@@ -71,10 +77,41 @@ struct
     Alcotest.(check agent_result_testable)
       "result must be an error" expected_response actual_response
 
+  let call_count = ref 0
+
+  module AgentLoopMockHttp : Agent.HTTP_CLIENT = struct
+    let post ~url:_ ~headers:_ ~body:_ =
+      let response =
+        match !call_count with
+        | 0 ->
+            read_file Paths.tool_call_response_path
+        | _ ->
+            read_file Paths.tool_final_response_path
+      in
+      incr call_count ;
+      Lwt.return (200, response)
+  end
+
+  module TestAgentLoop = AgentMake (AgentLoopMockHttp)
+
+  let test_agent_loop () =
+    call_count := 0 ;
+    let agent = TestAgentLoop.create_with_options "TEST_KEY" in
+    let result =
+      TestAgentLoop.agent_loop agent "What is (11434+12341)*412?"
+      |> Lwt_main.run
+    in
+    let expected =
+      Ok Agent.{response= "The result of (11434 + 12341) * 412 is 9,795,300."}
+    in
+    Alcotest.(check agent_result_testable)
+      "agent loop returns final response" expected result
+
   let tests =
     ( Paths.suite_name
     , [ Alcotest.test_case "parses successful response" `Quick
           test_request_success
-      ; Alcotest.test_case "parses error response" `Quick test_request_error ]
-    )
+      ; Alcotest.test_case "parses error response" `Quick test_request_error
+      ; Alcotest.test_case "agent loop with tool calling" `Quick test_agent_loop
+      ] )
 end
