@@ -1,5 +1,3 @@
-open Agent_run
-
 module Paths = struct
   let suite_name = "openai_agent"
 
@@ -8,6 +6,6 @@ module Paths = struct
   let error_path = "data/openai/error.json"
 end
 
-module T = Agent_test.Make (Openai_agent.MakeOpenAiAgent) (Paths)
+module T = Agent_test.Make (Agentlib.Openai_agent.Make) (Paths)
 
 let tests = T.tests

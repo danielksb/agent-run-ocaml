@@ -14,8 +14,7 @@ let home_dir () =
 let default_config_path () =
   Option.map (fun h -> Filename.concat h ".agent-run.toml") (home_dir ())
 
-let ollama_url_lens =
-  Toml.Lenses.(field "ollama" |-- key "url" |-- string)
+let ollama_url_lens = Toml.Lenses.(field "ollama" |-- key "url" |-- string)
 
 let of_toml (table : Toml.Types.table) =
   let ollama_url =

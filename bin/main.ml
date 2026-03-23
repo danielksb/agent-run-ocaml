@@ -1,10 +1,7 @@
-open Agent_run
+open Agentlib
 
-let run_agent
-    (type a)
-    (module A : Agent.AGENT with type t = a)
-    (agent_result : (a, Agent.agent_error) result)
-    prompt =
+let run_agent (type a) (module A : Agent.AGENT with type t = a)
+    (agent_result : (a, Agent.agent_error) result) prompt =
   let res =
     Result.bind agent_result (fun agent ->
         A.send_request agent prompt |> Lwt_main.run )
@@ -28,22 +25,24 @@ let usage () =
 
 type vendor = OpenAi | Gemini | Ollama
 
-type cli_config = {vendor_name: string; config_path: string option}
+(** application parameters defined when starting the program *)
+type params = {vendor_name: string; config_path: string option}
 
-type parameters = {prompt: string option; config: cli_config}
+(** Structural representation of all CLI parameters *)
+type cli_params = {prompt: string option; params: params}
 
-let create_params () =
+(** Parses app parameters from argv *)
+let parse_params () =
   let default_params =
-    {prompt= None; config= {vendor_name= "openai"; config_path= None}}
+    {prompt= None; params= {vendor_name= "openai"; config_path= None}}
   in
   let rec loop argv params =
     match argv with
     | ("--vendor" | "-v") :: vendor :: rest ->
-        loop rest
-          {params with config= {params.config with vendor_name= vendor}}
+        loop rest {params with params= {params.params with vendor_name= vendor}}
     | ("--config" | "-c") :: path :: rest ->
         loop rest
-          {params with config= {params.config with config_path= Some path}}
+          {params with params= {params.params with config_path= Some path}}
     | prompt :: rest ->
         loop rest {params with prompt= Some prompt}
     | [] ->
@@ -62,36 +61,35 @@ let parse_vendor str =
   | _ ->
       None
 
+module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient)
+module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient)
+module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient)
+
 let run vendor app_config prompt =
   match vendor with
   | OpenAi ->
-      run_agent (module Openai_agent.OpenAiAgent)
-        (Openai_agent.OpenAiAgent.create ())
-        prompt
+      run_agent (module OpenAiAgent) (OpenAiAgent.create ()) prompt
   | Gemini ->
-      run_agent (module Gemini_agent.GeminiAgent)
-        (Gemini_agent.GeminiAgent.create ())
-        prompt
+      run_agent (module GeminiAgent) (GeminiAgent.create ()) prompt
   | Ollama ->
-      run_agent (module Ollama_agent.OllamaAgent)
-        (Ok
-           (Ollama_agent.OllamaAgent.create_with_options
-              app_config.Config.ollama.url ) )
+      run_agent
+        (module OllamaAgent)
+        (Ok (OllamaAgent.create_with_options app_config.Config.ollama.url))
         prompt
 
-let run_with_vendor cli_config prompt =
-  let app_config = Config.load cli_config.config_path in
-  match parse_vendor cli_config.vendor_name with
+let run_with_params params prompt =
+  let config = Config.load params.config_path in
+  match parse_vendor params.vendor_name with
   | Some vendor ->
-      run vendor app_config prompt
+      run vendor config prompt
   | None ->
-      Printf.eprintf "ERROR: unknown vendor \"%s\"\n" cli_config.vendor_name ;
+      Printf.eprintf "ERROR: unknown vendor \"%s\"\n" params.vendor_name ;
       exit 1
 
 let () =
-  let params = create_params () in
-  match params with
+  let all_params = parse_params () in
+  match all_params with
   | {prompt= None; _} ->
       usage () ; exit 1
-  | {prompt= Some prompt; config} ->
-      run_with_vendor config prompt
+  | {prompt= Some prompt; params} ->
+      run_with_params params prompt

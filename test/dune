@@ -1,4 +1,4 @@
 (test
  (name test_suite)
- (libraries agent_run alcotest)
+ (libraries agentlib alcotest)
  (deps (source_tree data)))

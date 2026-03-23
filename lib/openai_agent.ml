@@ -23,7 +23,7 @@ type response_error = {message: string} [@@deriving yojson {strict= false}]
 type response = {id: string; output: response_output_message list}
 [@@deriving yojson {strict= false}]
 
-module MakeOpenAiAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
+module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   type t = {api_key: string; model: string; base_url: string}
 
   let create_with_options api_key =
@@ -75,5 +75,3 @@ module MakeOpenAiAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
     Printf.printf "Body: %s\n" body_str ;
     response_output body_str
 end
-
-module OpenAiAgent = MakeOpenAiAgent (Agent.RealHttpClient)

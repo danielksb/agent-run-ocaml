@@ -1,4 +1,4 @@
-open Agent_run
+open Agentlib
 
 (** reads the entire file at path into a string *)
 let read_file path =
@@ -13,8 +13,11 @@ let agent_result_testable =
     (testable Agent.pp_agent_response Agent.equal_agent_response)
     (testable Agent.pp_agent_error Agent.equal_agent_error)
 
+(**
+   Creates a collection of tests for a specific agent implementation.
+*)
 module Make
-    (M : functor (Http : Agent.HTTP_CLIENT) -> Agent.AGENT)
+    (AgentMake : functor (Http : Agent.HTTP_CLIENT) -> Agent.AGENT)
     (Paths : sig
       val suite_name : string
       (** name of the agent implementation *)
@@ -38,8 +41,8 @@ struct
       Lwt.return (401, mock_response)
   end
 
-  module TestAgent = M (MockHttpClient)
-  module TestAgentError = M (MockHttpClientError)
+  module TestAgent = AgentMake (MockHttpClient)
+  module TestAgentError = AgentMake (MockHttpClientError)
 
   let test_request_success () =
     let agent = TestAgent.create_with_options "TEST_KEY" in

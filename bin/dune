@@ -1,4 +1,4 @@
 (executable
  (public_name agent-run)
  (name main)
- (libraries agent_run))
+ (libraries agentlib))

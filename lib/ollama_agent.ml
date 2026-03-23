@@ -2,13 +2,12 @@ open Lwt
 
 type request = {model: string; prompt: string; stream: bool} [@@deriving yojson]
 
-type ollama_response = {response: string}
-[@@deriving yojson {strict= false}]
+type ollama_response = {response: string} [@@deriving yojson {strict= false}]
 
-module MakeOllamaAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
+module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   type t = {host: string; model: string}
 
-  let create_with_options host = {host; model= "llama3.2"}
+  let create_with_options host = {host; model= "functiongemma"}
 
   let create () = Ok (create_with_options "http://localhost:11434")
 
@@ -40,5 +39,3 @@ module MakeOllamaAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
     Printf.printf "Body: %s\n" body_str ;
     response_output body_str
 end
-
-module OllamaAgent = MakeOllamaAgent (Agent.RealHttpClient)
