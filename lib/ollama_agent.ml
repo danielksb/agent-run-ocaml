@@ -1,8 +1,14 @@
 open Lwt
 
-type request = {model: string; prompt: string; stream: bool} [@@deriving yojson]
+type request_message = {role: string; content: string} [@@deriving yojson]
 
-type ollama_response = {response: string} [@@deriving yojson {strict= false}]
+type request = {model: string; messages: request_message list; stream: bool}
+[@@deriving yojson]
+
+type response_message = {role: string; content: string}
+[@@deriving yojson {strict= false}]
+
+type response = {message: response_message} [@@deriving yojson {strict= false}]
 
 module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   type t = {host: string; model: string}
@@ -16,11 +22,11 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
     let error = Yojson.Safe.Util.member "error" json in
     match error with
     | `Null -> (
-      match ollama_response_of_yojson json with
+      match response_of_yojson json with
       | Error error ->
           Error Agent.{message= "Json parsing error: " ^ error}
-      | Ok {response} ->
-          Ok Agent.{response} )
+      | Ok response ->
+          Ok Agent.{response= response.message.content} )
     | `String message ->
         Error Agent.{message}
     | _ ->
@@ -29,10 +35,12 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   let send_request agent prompt =
     let headers = [("Content-Type", "application/json")] in
     let body =
-      {model= agent.model; prompt; stream= false}
+      { model= agent.model
+      ; messages= [{role= "user"; content= prompt}]
+      ; stream= false }
       |> request_to_yojson |> Yojson.Safe.to_string
     in
-    let url = agent.host ^ "/api/generate" in
+    let url = agent.host ^ "/api/chat" in
     Http.post ~url ~headers ~body
     >|= fun (code, body_str) ->
     Printf.printf "Response code: %d\n" code ;
