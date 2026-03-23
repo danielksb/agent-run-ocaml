@@ -17,6 +17,7 @@ let usage () =
   Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
   Printf.eprintf "Usage: agent-run [options] <prompt>\n\n" ;
   Printf.eprintf "Options:\n" ;
+  Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
   Printf.eprintf "  --config, -c  Path to TOML config file\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
@@ -43,9 +44,9 @@ let parse_params () =
     | ("--config" | "-c") :: path :: rest ->
         loop rest
           {params with params= {params.params with config_path= Some path}}
-    | prompt :: rest ->
+    | ("--prompt" | "-p") :: prompt :: rest ->
         loop rest {params with prompt= Some prompt}
-    | [] ->
+    | rest ->
         params
   in
   loop (Array.to_list Sys.argv |> List.drop 1) default_params
