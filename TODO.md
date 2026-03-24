@@ -1,0 +1,3 @@
+- add "--verbose"/"-v" parameter which prints all debug information to stderr
+- add "--model"/"-m" parameter to select the model to use
+- add tools to read and write files
