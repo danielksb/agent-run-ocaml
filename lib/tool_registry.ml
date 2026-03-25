@@ -5,7 +5,8 @@ type entry = {tool: Tool.t; run: handler}
 let entries : entry list =
   [ {tool= Weather_tool.definition; run= Weather_tool.run}
   ; {tool= Math_tools.add_definition; run= Math_tools.add_run}
-  ; {tool= Math_tools.multiply_definition; run= Math_tools.multiply_run} ]
+  ; {tool= Math_tools.multiply_definition; run= Math_tools.multiply_run}
+  ; {tool= List_files.definition; run= List_files.run} ]
 
 let tools () = List.map (fun e -> e.tool) entries
 
