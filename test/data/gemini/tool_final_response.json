@@ -4,7 +4,7 @@
             "content": {
                 "parts": [
                     {
-                        "text": "The result of (11434 + 12341) * 412 is 9,795,300."
+                        "text": "The current temperature in Berlin is 22°C."
                     }
                 ],
                 "role": "model"

@@ -5,16 +5,35 @@
                 "parts": [
                     {
                         "functionCall": {
-                            "name": "add",
-                            "args": {"a": 11434, "b": 12341},
+                            "name": "get_weather",
+                            "args": {
+                                "location": "Berlin",
+                                "unit": "celsius"
+                            },
                             "id": "fc_gemini_test_123"
-                        }
+                        },
+                        "thoughtSignature": "EuYGCuMGAb4+9vtM"
                     }
                 ],
-                "role": "model"
+                "role": "model",
+                "finishMessage": "Model generated function call(s)."
             },
             "finishReason": "STOP",
             "index": 0
         }
-    ]
+    ],
+    "usageMetadata": {
+        "promptTokenCount": 203,
+        "candidatesTokenCount": 54,
+        "totalTokenCount": 483,
+        "promptTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 203
+            }
+        ],
+        "thoughtsTokenCount": 226
+    },
+    "modelVersion": "gemini-3-flash-preview",
+    "responseId": "AqrDacSqPPvV7M8PlYKS2Qo"
 }

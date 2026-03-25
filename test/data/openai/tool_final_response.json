@@ -1,20 +1,100 @@
 {
-    "id": "resp_test_final",
+    "id": "resp_03aaaf479beb31210069c39a4baa6081a28bd41cf0357a371f",
     "object": "response",
-    "created_at": 1741294022,
+    "created_at": 1774426699,
     "status": "completed",
+    "background": false,
+    "billing": {
+        "payer": "developer"
+    },
+    "completed_at": 1774426701,
+    "error": null,
+    "frequency_penalty": 0.0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-4o-mini-2024-07-18",
     "output": [
         {
+            "id": "msg_03aaaf479beb31210069c39a4cd59881a2a6c6e655ec28535b",
             "type": "message",
-            "id": "msg_test_456",
             "status": "completed",
-            "role": "assistant",
             "content": [
                 {
                     "type": "output_text",
-                    "text": "The result of (11434 + 12341) * 412 is 9,795,300."
+                    "annotations": [],
+                    "logprobs": [],
+                    "text": "The current temperature in Berlin is 22°C."
                 }
-            ]
+            ],
+            "role": "assistant"
         }
-    ]
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0.0,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "prompt_cache_retention": null,
+    "reasoning": {
+        "effort": null,
+        "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+        "format": {
+            "type": "text"
+        },
+        "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tools": [
+        {
+            "type": "function",
+            "description": "Get the current weather for a location.",
+            "name": "get_weather",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "unit": {
+                        "type": "string",
+                        "description": "Temperature unit",
+                        "enum": [
+                            "celsius",
+                            "fahrenheit"
+                        ]
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "City and region, e.g. Boston, MA"
+                    }
+                },
+                "required": [
+                    "location",
+                    "unit"
+                ],
+                "additionalProperties": false
+            },
+            "strict": true
+        }
+    ],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+        "input_tokens": 176,
+        "input_tokens_details": {
+            "cached_tokens": 0
+        },
+        "output_tokens": 16,
+        "output_tokens_details": {
+            "reasoning_tokens": 0
+        },
+        "total_tokens": 192
+    },
+    "user": null,
+    "metadata": {}
 }

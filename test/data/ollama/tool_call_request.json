@@ -1,0 +1,88 @@
+{
+    "model": "functiongemma",
+    "messages": [
+        {
+            "role": "user",
+            "content": "What is the current temperature in Berlin in Celsius?"
+        }
+    ],
+    "stream": false,
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "Get the current weather for a location.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "unit": {
+                            "type": "string",
+                            "description": "Temperature unit",
+                            "enum": [
+                                "celsius",
+                                "fahrenheit"
+                            ]
+                        },
+                        "location": {
+                            "type": "string",
+                            "description": "City and region, e.g. Boston, MA"
+                        }
+                    },
+                    "required": [
+                        "location",
+                        "unit"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "add",
+                "description": "Add two numbers",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "b": {
+                            "type": "integer",
+                            "description": "The second number"
+                        },
+                        "a": {
+                            "type": "integer",
+                            "description": "The first number"
+                        }
+                    },
+                    "required": [
+                        "a",
+                        "b"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "multiply",
+                "description": "Multiply two numbers",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "b": {
+                            "type": "integer",
+                            "description": "The second number"
+                        },
+                        "a": {
+                            "type": "integer",
+                            "description": "The first number"
+                        }
+                    },
+                    "required": [
+                        "a",
+                        "b"
+                    ]
+                }
+            }
+        }
+    ]
+}

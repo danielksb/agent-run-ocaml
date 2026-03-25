@@ -35,7 +35,7 @@ let build_request messages tools =
     [ ("contents", `List contents)
     ; ("tools", `List [`Assoc [("functionDeclarations", `List tool_decls)]]) ]
 
-let parse_response body =
+let parse_response thought_signatures_ref body =
   try
     let json = Yojson.Safe.from_string body in
     let open Yojson.Safe.Util in
@@ -47,15 +47,22 @@ let parse_response body =
       | candidate :: _ -> (
           let content = member "content" candidate in
           let parts = member "parts" content |> to_list in
-          let function_calls =
-            List.filter_map
-              (fun part ->
+          let function_calls_rev, thought_signatures_rev =
+            List.fold_left
+              (fun (tcs_rev, sigs_rev) part ->
                 match member "functionCall" part with
                 | `Null ->
-                    None
+                    (tcs_rev, sigs_rev)
                 | fc ->
                     let name = member "name" fc |> to_string in
                     let args = member "args" fc in
+                    let thought_signature =
+                      match member "thoughtSignature" part with
+                      | `String s ->
+                          Some s
+                      | _ ->
+                          None
+                    in
                     let id =
                       match member "id" fc with
                       | `String s ->
@@ -63,9 +70,13 @@ let parse_response body =
                       | _ ->
                           None
                     in
-                    Some Agent.{name; arguments= args; id} )
-              parts
+                    ( Agent.{name; arguments= args; id} :: tcs_rev
+                    , thought_signature :: sigs_rev ) )
+              ([], []) parts
           in
+          let function_calls = List.rev function_calls_rev in
+          let thought_signatures = List.rev thought_signatures_rev in
+          thought_signatures_ref := thought_signatures ;
           if function_calls <> [] then
             Agent.ToolCallResponse {content= ""; tool_calls= function_calls}
           else
@@ -97,7 +108,7 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
 
   let create_with_options api_key =
     { api_key
-    ; model= "gemini-2.0-flash"
+    ; model= "gemini-flash-latest"
     ; base_url= "https://generativelanguage.googleapis.com" }
 
   let create () =
@@ -109,6 +120,7 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
 
   let agent_loop agent prompt =
     let tools = Tool_registry.tools () in
+    let thought_signatures : string option list ref = ref [] in
     let headers =
       [("Content-Type", "application/json"); ("x-goog-api-key", agent.api_key)]
     in
@@ -119,12 +131,16 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
       { initial_messages= (fun p -> [UserText p])
       ; build_request_body=
           (fun messages -> build_request messages tools |> Yojson.Safe.to_string)
-      ; parse_response
+      ; parse_response= (fun body -> parse_response thought_signatures body)
       ; append_assistant=
           (fun messages _content tool_calls ->
             let parts =
-              List.map
-                (fun (tc : Agent.tool_call) ->
+              let sigs = !thought_signatures in
+              List.mapi
+                (fun i (tc : Agent.tool_call) ->
+                  let thought_signature =
+                    match List.nth_opt sigs i with Some s -> s | None -> None
+                  in
                   let fc_fields =
                     let base =
                       [("name", `String tc.name); ("args", tc.arguments)]
@@ -135,7 +151,13 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
                     | None ->
                         base
                   in
-                  `Assoc [("functionCall", `Assoc fc_fields)] )
+                  match thought_signature with
+                  | Some ts ->
+                      `Assoc
+                        [ ("functionCall", `Assoc fc_fields)
+                        ; ("thoughtSignature", `String ts) ]
+                  | None ->
+                      `Assoc [("functionCall", `Assoc fc_fields)] )
                 tool_calls
             in
             let model_content =

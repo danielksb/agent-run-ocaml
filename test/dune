@@ -1,5 +1,6 @@
 (test
  (name test_suite)
- (libraries agentlib alcotest)
+ (libraries agentlib alcotest lwt yojson)
+ (modules_without_implementation test_config)
  (deps
   (source_tree data)))

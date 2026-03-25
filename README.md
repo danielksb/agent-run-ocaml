@@ -16,5 +16,5 @@ Invoke-RestMethod -Uri 'http://localhost:11434/api/chat' -Method Post -Body '{"m
 ```
 
 ```shell
-opam exec dune exec -- agent-run -- --vendor ollama "Create a cron schedule string for 'every week day at 6:00 in the morning'. Respond with the cron schedule string only"
+opam exec dune exec -- agent-run -- --vendor ollama --prompt "What is the current temperature in Berlin in Celsius?"
 ```

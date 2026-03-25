@@ -1,16 +1,16 @@
 {
-    "model": "qwen3",
-    "created_at": "2024-01-15T10:30:01.000000Z",
+    "model": "functiongemma",
+    "created_at": "2026-03-25T08:38:57.6654008Z",
     "message": {
         "role": "assistant",
-        "content": "The result of (11434 + 12341) * 412 is 9,795,300."
+        "content": "The current temperature in Berlin is 22°C."
     },
     "done": true,
     "done_reason": "stop",
-    "total_duration": 3589157167,
-    "load_duration": 1013701500,
-    "prompt_eval_count": 120,
-    "prompt_eval_duration": 860282000,
-    "eval_count": 50,
-    "eval_duration": 925948000
+    "total_duration": 956424400,
+    "load_duration": 670747100,
+    "prompt_eval_count": 297,
+    "prompt_eval_duration": 29628800,
+    "eval_count": 23,
+    "eval_duration": 219693800
 }

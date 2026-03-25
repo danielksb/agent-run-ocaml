@@ -1,0 +1,98 @@
+{
+    "model": "gpt-4o-mini",
+    "input": [
+        {
+            "role": "user",
+            "content": "What is the current temperature in Berlin in Celsius?"
+        },
+        {
+            "type": "function_call",
+            "call_id": "call_W0Bur6wLP1dmmNA9MkUI9enH",
+            "name": "get_weather",
+            "arguments": "{\"unit\":\"celsius\",\"location\":\"Berlin\"}"
+        },
+        {
+            "type": "function_call_output",
+            "call_id": "call_W0Bur6wLP1dmmNA9MkUI9enH",
+            "output": "Test weather: 22°C."
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "name": "get_weather",
+            "description": "Get the current weather for a location.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "unit": {
+                        "type": "string",
+                        "description": "Temperature unit",
+                        "enum": [
+                            "celsius",
+                            "fahrenheit"
+                        ]
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "City and region, e.g. Boston, MA"
+                    }
+                },
+                "required": [
+                    "location",
+                    "unit"
+                ],
+                "additionalProperties": false
+            },
+            "strict": true
+        },
+        {
+            "type": "function",
+            "name": "add",
+            "description": "Add two numbers",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "b": {
+                        "type": "integer",
+                        "description": "The second number"
+                    },
+                    "a": {
+                        "type": "integer",
+                        "description": "The first number"
+                    }
+                },
+                "required": [
+                    "a",
+                    "b"
+                ],
+                "additionalProperties": false
+            },
+            "strict": true
+        },
+        {
+            "type": "function",
+            "name": "multiply",
+            "description": "Multiply two numbers",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "b": {
+                        "type": "integer",
+                        "description": "The second number"
+                    },
+                    "a": {
+                        "type": "integer",
+                        "description": "The first number"
+                    }
+                },
+                "required": [
+                    "a",
+                    "b"
+                ],
+                "additionalProperties": false
+            },
+            "strict": true
+        }
+    ]
+}

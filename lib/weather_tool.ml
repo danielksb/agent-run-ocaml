@@ -25,4 +25,4 @@ let run (args : Yojson.Safe.t) =
   | Error _ as e ->
       e
   | Ok _ ->
-      Ok "Test weather: 22°C, partly cloudy (static response for get_weather)."
+      Ok "Test weather: 22°C."

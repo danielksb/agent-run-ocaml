@@ -1,0 +1,115 @@
+{
+    "contents": [
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "text": "What is the current temperature in Berlin in Celsius?"
+                }
+            ]
+        },
+        {
+            "role": "model",
+            "parts": [
+                {
+                    "functionCall": {
+                        "name": "get_weather",
+                        "args": {
+                            "location": "Berlin",
+                            "unit": "celsius"
+                        },
+                        "id": "fc_gemini_test_123"
+                    },
+                    "thoughtSignature": "EuYGCuMGAb4+9vtM"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "functionResponse": {
+                        "name": "get_weather",
+                        "response": {
+                            "result": "Test weather: 22°C."
+                        },
+                        "id": "fc_gemini_test_123"
+                    }
+                }
+            ]
+        }
+    ],
+    "tools": [
+        {
+            "functionDeclarations": [
+                {
+                    "name": "get_weather",
+                    "description": "Get the current weather for a location.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "unit": {
+                                "type": "string",
+                                "description": "Temperature unit",
+                                "enum": [
+                                    "celsius",
+                                    "fahrenheit"
+                                ]
+                            },
+                            "location": {
+                                "type": "string",
+                                "description": "City and region, e.g. Boston, MA"
+                            }
+                        },
+                        "required": [
+                            "location",
+                            "unit"
+                        ]
+                    }
+                },
+                {
+                    "name": "add",
+                    "description": "Add two numbers",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "b": {
+                                "type": "integer",
+                                "description": "The second number"
+                            },
+                            "a": {
+                                "type": "integer",
+                                "description": "The first number"
+                            }
+                        },
+                        "required": [
+                            "a",
+                            "b"
+                        ]
+                    }
+                },
+                {
+                    "name": "multiply",
+                    "description": "Multiply two numbers",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "b": {
+                                "type": "integer",
+                                "description": "The second number"
+                            },
+                            "a": {
+                                "type": "integer",
+                                "description": "The first number"
+                            }
+                        },
+                        "required": [
+                            "a",
+                            "b"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

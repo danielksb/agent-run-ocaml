@@ -1,12 +1,5 @@
 open Agentlib
 
-(** reads the entire file at path into a string *)
-let read_file path =
-  let file = open_in_bin path in
-  let size = in_channel_length file in
-  let data = really_input_string file size in
-  close_in file ; data
-
 let agent_result_testable =
   let open Alcotest in
   result
@@ -18,40 +11,18 @@ let agent_result_testable =
 *)
 module Make
     (AgentMake : functor (Http : Agent.HTTP_CLIENT) -> Agent.AGENT)
-    (Paths : sig
-      val suite_name : string
-      (** name of the agent implementation *)
-
-      val response_path : string
-      (** path to file with successful HTTP response *)
-
-      val error_path : string
-      (** path to file with HTTP error response *)
-
-      val tool_call_response_path : string
-      (** path to file with tool-call HTTP response *)
-
-      val tool_final_response_path : string
-      (** path to file with final text HTTP response after tool execution *)
-    end) =
+    (TestConfig : Test_config.TEST_CONIFG) =
 struct
-  module MockHttpClient : Agent.HTTP_CLIENT = struct
-    let post ~url:_ ~headers:_ ~body:_ =
-      let mock_response = read_file Paths.response_path in
-      Lwt.return (200, mock_response)
-  end
-
-  module MockHttpClientError : Agent.HTTP_CLIENT = struct
-    let post ~url:_ ~headers:_ ~body:_ =
-      let mock_response = read_file Paths.error_path in
-      Lwt.return (401, mock_response)
-  end
-
-  module TestAgent = AgentMake (MockHttpClient)
-  module TestAgentError = AgentMake (MockHttpClientError)
-
   let test_request_success () =
-    let agent = TestAgent.create_with_options "TEST_KEY" in
+    let mock_client =
+      Http_mock.post_always_from_file ~response_status:200
+        ~response_body_path:TestConfig.response_path
+    in
+    let module MockHttpClient = (val mock_client : Agent.HTTP_CLIENT) in
+    let module TestAgent = AgentMake (MockHttpClient) in
+    let agent =
+      TestAgent.create_with_options TestConfig.create_with_options_arg
+    in
     let actual_response =
       TestAgent.send_request agent "Here is a prompt" |> Lwt_main.run
     in
@@ -68,7 +39,15 @@ struct
       "result must be successful" expected_response actual_response
 
   let test_request_error () =
-    let agent = TestAgentError.create_with_options "TEST_KEY" in
+    let mock_client =
+      Http_mock.post_always_from_file ~response_status:401
+        ~response_body_path:TestConfig.error_path
+    in
+    let module MockHttpClientError = (val mock_client : Agent.HTTP_CLIENT) in
+    let module TestAgentError = AgentMake (MockHttpClientError) in
+    let agent =
+      TestAgentError.create_with_options TestConfig.create_with_options_arg
+    in
     let actual_response =
       TestAgentError.send_request agent "Here is a prompt" |> Lwt_main.run
     in
@@ -77,38 +56,37 @@ struct
     Alcotest.(check agent_result_testable)
       "result must be an error" expected_response actual_response
 
-  let call_count = ref 0
-
-  module AgentLoopMockHttp : Agent.HTTP_CLIENT = struct
-    let post ~url:_ ~headers:_ ~body:_ =
-      let response =
-        match !call_count with
-        | 0 ->
-            read_file Paths.tool_call_response_path
-        | _ ->
-            read_file Paths.tool_final_response_path
-      in
-      incr call_count ;
-      Lwt.return (200, response)
-  end
-
-  module TestAgentLoop = AgentMake (AgentLoopMockHttp)
-
   let test_agent_loop () =
-    call_count := 0 ;
-    let agent = TestAgentLoop.create_with_options "TEST_KEY" in
+    let interactions =
+      [ Http_mock.expect_post ~url:TestConfig.tool_url
+          ~request_body_path:TestConfig.tool_call_request_path
+          ~response_status:200
+          ~response_body_path:TestConfig.tool_call_response_path
+      ; Http_mock.expect_post ~url:TestConfig.tool_url
+          ~request_body_path:TestConfig.tool_final_request_path
+          ~response_status:200
+          ~response_body_path:TestConfig.tool_final_response_path ]
+    in
+    let mock_client, assert_all_matched = Http_mock.make interactions in
+    let module MockHttpClient = (val mock_client : Agent.HTTP_CLIENT) in
+    let module TestAgentLoop = AgentMake (MockHttpClient) in
+    let agent =
+      TestAgentLoop.create_with_options TestConfig.create_with_options_arg
+    in
     let result =
-      TestAgentLoop.agent_loop agent "What is (11434+12341)*412?"
+      TestAgentLoop.agent_loop agent
+        "What is the current temperature in Berlin in Celsius?"
       |> Lwt_main.run
     in
     let expected =
-      Ok Agent.{response= "The result of (11434 + 12341) * 412 is 9,795,300."}
+      Ok Agent.{response= "The current temperature in Berlin is 22°C."}
     in
     Alcotest.(check agent_result_testable)
-      "agent loop returns final response" expected result
+      "agent loop returns final response" expected result ;
+    assert_all_matched ()
 
   let tests =
-    ( Paths.suite_name
+    ( TestConfig.suite_name
     , [ Alcotest.test_case "parses successful response" `Quick
           test_request_success
       ; Alcotest.test_case "parses error response" `Quick test_request_error
