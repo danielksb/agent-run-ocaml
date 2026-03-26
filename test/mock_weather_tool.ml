@@ -1,3 +1,5 @@
+open Agentlib
+
 let definition : Tool.t =
   { type_= "function"
   ; name= "get_weather"
@@ -19,10 +21,9 @@ let definition : Tool.t =
       ; required= ["location"; "unit"] }
   ; strict= true }
 
-(** [run args] validates required arguments, then returns a static test string. *)
 let run (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
   | Ok _ ->
-      Ok "Test weather: 22°C."
+      Ok "Test weather: 22\194\176C."

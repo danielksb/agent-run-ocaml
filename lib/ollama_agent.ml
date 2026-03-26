@@ -97,7 +97,8 @@ let parse_response body =
         Agent.ErrorResponse "Unknown error format"
   with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
-module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
+module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) :
+  Agent.AGENT = struct
   type t = {host: string; model: string}
 
   let create_with_options host = {host; model= "functiongemma"}
@@ -105,7 +106,8 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
   let create () = Ok (create_with_options "http://localhost:11434")
 
   let agent_loop agent prompt =
-    let tools = Tool_registry.tools () in
+    let registry = Tools.registry in
+    let tools = Tool_registry.tools registry in
     let headers = [("Content-Type", "application/json")] in
     let url = agent.host ^ "/api/chat" in
     let fns : ollama_message Agent.agent_loop_fns =
@@ -119,7 +121,7 @@ module Make (Http : Agent.HTTP_CLIENT) : Agent.AGENT = struct
             messages @ [Assistant {content; tool_calls}] )
       ; append_tool_result= (fun messages tr -> messages @ [ToolResult tr]) }
     in
-    Agent.run_agent_loop ~post:Http.post ~url ~headers fns prompt
+    Agent.run_agent_loop registry ~post:Http.post ~url ~headers fns prompt
 
   let send_request = agent_loop
 end

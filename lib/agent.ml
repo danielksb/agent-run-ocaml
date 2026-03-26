@@ -13,9 +13,10 @@ type parsed_response =
   | ToolCallResponse of {content: string; tool_calls: tool_call list}
   | ErrorResponse of string
 
-let execute_tool_call (tc : tool_call) : tool_result =
+let execute_tool_call (tool_reg : Tool_registry.t) (tc : tool_call) :
+    tool_result =
   let content =
-    match Tool_registry.find_handler tc.name with
+    match Tool_registry.find_handler tool_reg tc.name with
     | Some handler -> (
       match handler tc.arguments with
       | Ok r ->
@@ -34,7 +35,7 @@ type 'msg agent_loop_fns =
   ; append_assistant: 'msg list -> string -> tool_call list -> 'msg list
   ; append_tool_result: 'msg list -> tool_result -> 'msg list }
 
-let run_agent_loop ~post ~url ~headers fns prompt =
+let run_agent_loop tool_registry ~post ~url ~headers fns prompt =
   let open Lwt in
   let rec loop messages =
     let body = fns.build_request_body messages in
@@ -47,7 +48,9 @@ let run_agent_loop ~post ~url ~headers fns prompt =
         Lwt.return (Ok {response= text})
     | ToolCallResponse {content; tool_calls} ->
         let messages = fns.append_assistant messages content tool_calls in
-        let tool_results = List.map execute_tool_call tool_calls in
+        let tool_results =
+          List.map (execute_tool_call tool_registry) tool_calls
+        in
         let messages =
           List.fold_left
             (fun msgs tr -> fns.append_tool_result msgs tr)

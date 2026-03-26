@@ -62,9 +62,13 @@ let parse_vendor str =
   | _ ->
       None
 
-module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient)
-module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient)
-module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient)
+module ProdTools = struct
+  let registry = Tool_registry.default_registry ()
+end
+
+module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient) (ProdTools)
+module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient) (ProdTools)
+module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient) (ProdTools)
 
 let run vendor app_config prompt =
   match vendor with

@@ -2,18 +2,33 @@ type handler = Yojson.Safe.t -> (string, string) result
 
 type entry = {tool: Tool.t; run: handler}
 
-let entries : entry list =
-  [ {tool= Weather_tool.definition; run= Weather_tool.run}
-  ; {tool= Math_tools.add_definition; run= Math_tools.add_run}
-  ; {tool= Math_tools.multiply_definition; run= Math_tools.multiply_run}
-  ; {tool= List_files.definition; run= List_files.run} ]
+type t = {tools: entry list}
 
-let tools () = List.map (fun e -> e.tool) entries
+module type PROVIDER = sig
+  val registry : t
+end
 
-let tools_to_yojson () = List.map (fun e -> Tool.to_yojson e.tool) entries
+let empty : t = {tools= []}
 
-let find_handler name =
-  match List.find_opt (fun e -> e.tool.name = name) entries with
+let add_entry registry entry = {tools= entry :: registry.tools}
+
+let add_tool registry ~(tool : Tool.t) ~(run : handler) =
+  add_entry registry {tool; run}
+
+let all_tools : entry list =
+  [ {tool= List_files.definition; run= List_files.run}
+  ; {tool= Read_file.definition; run= Read_file.run}
+  ; {tool= Write_file.definition; run= Write_file.run} ]
+
+let default_registry () = {tools= all_tools}
+
+let tools registry = List.map (fun e -> e.tool) registry.tools
+
+let tools_to_yojson registry =
+  List.map (fun e -> Tool.to_yojson e.tool) registry.tools
+
+let find_handler registry name =
+  match List.find_opt (fun e -> e.tool.name = name) registry.tools with
   | Some e ->
       Some e.run
   | None ->

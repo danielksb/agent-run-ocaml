@@ -36,48 +36,6 @@
                             "unit"
                         ]
                     }
-                },
-                {
-                    "name": "add",
-                    "description": "Add two numbers",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "b": {
-                                "type": "integer",
-                                "description": "The second number"
-                            },
-                            "a": {
-                                "type": "integer",
-                                "description": "The first number"
-                            }
-                        },
-                        "required": [
-                            "a",
-                            "b"
-                        ]
-                    }
-                },
-                {
-                    "name": "multiply",
-                    "description": "Multiply two numbers",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "b": {
-                                "type": "integer",
-                                "description": "The second number"
-                            },
-                            "a": {
-                                "type": "integer",
-                                "description": "The first number"
-                            }
-                        },
-                        "required": [
-                            "a",
-                            "b"
-                        ]
-                    }
                 }
             ]
         }

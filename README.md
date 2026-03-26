@@ -18,3 +18,10 @@ Invoke-RestMethod -Uri 'http://localhost:11434/api/chat' -Method Post -Body '{"m
 ```shell
 opam exec dune exec -- agent-run -- --vendor ollama --prompt "What is the current temperature in Berlin in Celsius?"
 ```
+
+## Tool Registry Profiles
+
+Registry profile selection is hardcoded by entrypoint:
+
+- `bin/main.ml` injects a production tool registry with all built-in tools.
+- test agents inject a test-only registry with the mock `get_weather` tool from `test/mock_weather_tool.ml`.

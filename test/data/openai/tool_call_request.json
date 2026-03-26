@@ -34,54 +34,6 @@
                 "additionalProperties": false
             },
             "strict": true
-        },
-        {
-            "type": "function",
-            "name": "add",
-            "description": "Add two numbers",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "b": {
-                        "type": "integer",
-                        "description": "The second number"
-                    },
-                    "a": {
-                        "type": "integer",
-                        "description": "The first number"
-                    }
-                },
-                "required": [
-                    "a",
-                    "b"
-                ],
-                "additionalProperties": false
-            },
-            "strict": true
-        },
-        {
-            "type": "function",
-            "name": "multiply",
-            "description": "Multiply two numbers",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "b": {
-                        "type": "integer",
-                        "description": "The second number"
-                    },
-                    "a": {
-                        "type": "integer",
-                        "description": "The first number"
-                    }
-                },
-                "required": [
-                    "a",
-                    "b"
-                ],
-                "additionalProperties": false
-            },
-            "strict": true
         }
     ]
 }
