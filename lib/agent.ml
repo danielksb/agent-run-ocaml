@@ -40,16 +40,22 @@ type 'msg agent_loop_fns =
 
 let run_agent_loop tool_registry ~post ~url ~headers fns prompt =
   let open Lwt in
-  let rec loop messages =
+  let rec loop step messages =
     let body = fns.build_request_body messages in
     post ~url ~headers ~body
     >>= fun (_code, body_str) ->
     match fns.parse_response body_str with
     | ErrorResponse msg ->
+        Logging.verbose
+          (Printf.sprintf "step %d model response type: error" step) ;
         Lwt.return (Error {message= msg})
     | TextResponse text ->
+        Logging.verbose
+          (Printf.sprintf "step %d model response type: final_text" step) ;
         Lwt.return (Ok {response= text})
     | ToolCallResponse {content; tool_calls} ->
+        Logging.verbose
+          (Printf.sprintf "step %d model response type: tool_call" step) ;
         let messages = fns.append_assistant messages content tool_calls in
         List.iter
           (fun (tc : tool_call) ->
@@ -65,9 +71,9 @@ let run_agent_loop tool_registry ~post ~url ~headers fns prompt =
             (fun msgs tr -> fns.append_tool_result msgs tr)
             messages tool_results
         in
-        loop messages
+        loop (step + 1) messages
   in
-  loop (fns.initial_messages prompt)
+  loop 1 (fns.initial_messages prompt)
 
 module type HTTP_CLIENT = sig
   val post :
