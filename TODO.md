@@ -1,1 +1,7 @@
-add "--verbose"/"-v" parameter which prints intermediate results from the model to stdout. This should allow the user to see which tools are called. All verbose messages start with "INFO:"
+# TODOs
+- configure default model in config file, but allow to overwrite with params
+- configure default base url in config file, but allow to overwrite with params
+- define list of ignored file/directory pattern in config file
+- add rate limit
+- add tool for fetching URLs
+- add param which allows loading files into context
