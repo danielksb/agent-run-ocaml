@@ -20,9 +20,7 @@ struct
     in
     let module MockHttpClient = (val mock_client : Agent.HTTP_CLIENT) in
     let module TestAgent = AgentMake (MockHttpClient) in
-    let agent =
-      TestAgent.create_with_options TestConfig.create_with_options_arg
-    in
+    let agent = TestAgent.create TestConfig.agent_config in
     let actual_response =
       TestAgent.send_request agent "Here is a prompt" |> Lwt_main.run
     in
@@ -45,9 +43,7 @@ struct
     in
     let module MockHttpClientError = (val mock_client : Agent.HTTP_CLIENT) in
     let module TestAgentError = AgentMake (MockHttpClientError) in
-    let agent =
-      TestAgentError.create_with_options TestConfig.create_with_options_arg
-    in
+    let agent = TestAgentError.create TestConfig.agent_config in
     let actual_response =
       TestAgentError.send_request agent "Here is a prompt" |> Lwt_main.run
     in
@@ -70,9 +66,7 @@ struct
     let mock_client, assert_all_matched = Http_mock.make interactions in
     let module MockHttpClient = (val mock_client : Agent.HTTP_CLIENT) in
     let module TestAgentLoop = AgentMake (MockHttpClient) in
-    let agent =
-      TestAgentLoop.create_with_options TestConfig.create_with_options_arg
-    in
+    let agent = TestAgentLoop.create TestConfig.agent_config in
     let result =
       TestAgentLoop.agent_loop agent
         "What is the current temperature in Berlin in Celsius?"

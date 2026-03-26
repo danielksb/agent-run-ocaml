@@ -106,17 +106,10 @@ let parse_response thought_signatures_ref body =
 module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) = struct
   type t = {api_key: string; model: string; base_url: string}
 
-  let create_with_options api_key =
-    { api_key
-    ; model= "gemini-flash-latest"
-    ; base_url= "https://generativelanguage.googleapis.com" }
-
-  let create () =
-    match Sys.getenv_opt "GEMINI_API_KEY" with
-    | Some api_key ->
-        Ok (create_with_options api_key)
-    | None ->
-        Error Agent.{message= "GEMINI_API_KEY environment variable not set"}
+  let create (config : Agent.config) =
+    { api_key= config.api_key
+    ; model= config.model_name
+    ; base_url= config.base_url }
 
   let with_model agent model = {agent with model}
 

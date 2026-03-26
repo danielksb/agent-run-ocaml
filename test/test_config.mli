@@ -2,8 +2,8 @@ module type TEST_CONIFG = sig
   val suite_name : string
   (** name of the agent implementation *)
 
-  val create_with_options_arg : string
-  (** Argument passed to [create_with_options] for this agent. *)
+  val agent_config : Agentlib.Agent.config
+  (** Config parameter passed to [create] this agent. *)
 
   val response_path : string
   (** path to file with successful HTTP response *)

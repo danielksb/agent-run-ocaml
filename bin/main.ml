@@ -29,9 +29,7 @@ type vendor = OpenAi | Gemini | Ollama
 
 (** application parameters defined when starting the program *)
 type params =
-  { vendor_name: string
-  ; config_path: string option
-  ; model_name: string option }
+  {vendor_name: string; config_path: string option; model_name: string option}
 
 (** Structural representation of all CLI parameters *)
 type cli_params = {prompt: string option; params: params}
@@ -78,49 +76,52 @@ module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient) (ProdTools)
 module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient) (ProdTools)
 module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient) (ProdTools)
 
-let run vendor app_config prompt model_name =
+let run vendor app_config prompt params =
   match vendor with
   | OpenAi ->
+      let model_name = Option.value params.model_name ~default:"gpt-4o-mini" in
       let agent_result =
-        Result.map
-          (fun agent ->
-            match model_name with
-            | Some model ->
-                OpenAiAgent.with_model agent model
-            | None ->
-                agent )
-          (OpenAiAgent.create ())
+        match Sys.getenv_opt "OPENAI_API_KEY" with
+        | Some api_key ->
+            Ok
+              (OpenAiAgent.create
+                 {model_name; api_key; base_url= "https://api.openai.com"} )
+        | None ->
+            Error Agent.{message= "OPENAI_API_KEY environment variable not set"}
       in
       run_agent (module OpenAiAgent) agent_result prompt
   | Gemini ->
+      let model_name =
+        Option.value params.model_name ~default:"gemini-flash-latest"
+      in
       let agent_result =
-        Result.map
-          (fun agent ->
-            match model_name with
-            | Some model ->
-                GeminiAgent.with_model agent model
-            | None ->
-                agent )
-          (GeminiAgent.create ())
+        match Sys.getenv_opt "GEMINI_API_KEY" with
+        | Some api_key ->
+            Ok
+              (GeminiAgent.create
+                 { model_name
+                 ; api_key
+                 ; base_url= "https://generativelanguage.googleapis.com" } )
+        | None ->
+            Error Agent.{message= "GEMINI_API_KEY environment variable not set"}
       in
       run_agent (module GeminiAgent) agent_result prompt
   | Ollama ->
-      let agent =
-        OllamaAgent.create_with_options app_config.Config.ollama.url
-        |> fun agent ->
-        match model_name with
-        | Some model ->
-            OllamaAgent.with_model agent model
-        | None ->
-            agent
+      let model_name =
+        Option.value params.model_name ~default:"functiongemma"
       in
-      run_agent (module OllamaAgent) (Ok agent) prompt
+      let agent_result =
+        Ok
+          (OllamaAgent.create
+             {model_name; api_key= ""; base_url= "http://localhost:11434"} )
+      in
+      run_agent (module OllamaAgent) agent_result prompt
 
 let run_with_params params prompt =
   let config = Config.load params.config_path in
   match parse_vendor params.vendor_name with
   | Some vendor ->
-      run vendor config prompt params.model_name
+      run vendor config prompt params
   | None ->
       Printf.eprintf "ERROR: unknown vendor \"%s\"\n" params.vendor_name ;
       exit 1

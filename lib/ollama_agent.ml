@@ -98,19 +98,18 @@ let parse_response body =
   with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
 module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) = struct
-  type t = {host: string; model: string}
+  type t = {base_url: string; model: string}
 
-  let create_with_options host = {host; model= "functiongemma"}
+  let create (config : Agent.config) =
+    {base_url= config.base_url; model= config.model_name}
 
-  let create () = Ok (create_with_options "http://localhost:11434")
-
-  let with_model agent model = {agent with model}
+  let with_url agent url = {agent with base_url= url}
 
   let agent_loop agent prompt =
     let registry = Tools.registry in
     let tools = Tool_registry.tools registry in
     let headers = [("Content-Type", "application/json")] in
-    let url = agent.host ^ "/api/chat" in
+    let url = agent.base_url ^ "/api/chat" in
     let fns : ollama_message Agent.agent_loop_fns =
       { initial_messages= (fun p -> [User p])
       ; build_request_body=

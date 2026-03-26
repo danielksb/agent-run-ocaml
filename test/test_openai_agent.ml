@@ -3,7 +3,10 @@ open Agentlib
 module TestConfig = struct
   let suite_name = "openai_agent"
 
-  let create_with_options_arg = "TEST_KEY"
+  let agent_config : Agentlib.Agent.config =
+    { model_name= "gpt-4o-mini"
+    ; base_url= "https://api.openai.com"
+    ; api_key= "TEST_KEY" }
 
   let response_path = "data/openai/response.json"
 

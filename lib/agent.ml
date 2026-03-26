@@ -1,3 +1,6 @@
+(** common configuration for all agent implementations *)
+type config = {model_name: string; api_key: string; base_url: string}
+
 type agent_response = {response: string} [@@deriving show, eq]
 
 type agent_error = {message: string} [@@deriving show, eq]
@@ -89,9 +92,7 @@ end
 module type AGENT = sig
   type t
 
-  val create_with_options : string -> t
-
-  val create : unit -> (t, agent_error) result
+  val create : config -> t
 
   val send_request : t -> string -> agent_result Lwt.t
 

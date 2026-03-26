@@ -3,7 +3,10 @@ open Agentlib
 module TestConfig = struct
   let suite_name = "gemini_agent"
 
-  let create_with_options_arg = "TEST_KEY"
+  let agent_config : Agentlib.Agent.config =
+    { model_name= "gemini-flash-latest"
+    ; api_key= "TEST_KEY"
+    ; base_url= "https://generativelanguage.googleapis.com" }
 
   let response_path = "data/gemini/response.json"
 
