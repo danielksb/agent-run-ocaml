@@ -18,6 +18,7 @@ let usage () =
   Printf.eprintf "Usage: agent-run [options] <prompt>\n\n" ;
   Printf.eprintf "Options:\n" ;
   Printf.eprintf "  --debug, -d   Enable debug logs to stderr\n" ;
+  Printf.eprintf "  --verbose, -V Enable verbose logs to stdout\n" ;
   Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
   Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
@@ -33,7 +34,8 @@ type params =
   { vendor_name: string
   ; config_path: string option
   ; model_name: string option
-  ; debug: bool }
+  ; debug: bool
+  ; verbose: bool }
 
 (** Structural representation of all CLI parameters *)
 type cli_params = {prompt: string option; params: params}
@@ -46,12 +48,15 @@ let parse_params () =
         { vendor_name= "openai"
         ; config_path= None
         ; model_name= None
-        ; debug= false } }
+        ; debug= false
+        ; verbose= false } }
   in
   let rec loop argv params =
     match argv with
     | ("--debug" | "-d") :: rest ->
         loop rest {params with params= {params.params with debug= true}}
+    | ("--verbose" | "-V") :: rest ->
+        loop rest {params with params= {params.params with verbose= true}}
     | ("--vendor" | "-v") :: vendor :: rest ->
         loop rest {params with params= {params.params with vendor_name= vendor}}
     | ("--config" | "-c") :: path :: rest ->
@@ -128,7 +133,9 @@ let run vendor app_config prompt params =
       run_agent (module OllamaAgent) agent_result prompt
 
 let run_with_params params prompt =
-  Logging.set_debug params.debug ;
+  if params.debug then Logging.set_level Logging.Debug
+  else if params.verbose then Logging.set_level Logging.Verbose
+  else Logging.set_level Logging.Normal ;
   let config = Config.load params.config_path in
   match parse_vendor params.vendor_name with
   | Some vendor ->

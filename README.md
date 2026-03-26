@@ -23,11 +23,3 @@ dune exec -- agent-run --vendor ollama --prompt "What is the current temperature
 dune exec -- agent-run --vendor openai --model gpt-4.1-mini --prompt "What is the capital of Germany?"
 ```
 
-Use `--debug` (or `-d`) to print request/response debug logs to `stderr`.
-
-## Tool Registry Profiles
-
-Registry profile selection is hardcoded by entrypoint:
-
-- `bin/main.ml` injects a production tool registry with all built-in tools.
-- test agents inject a test-only registry with the mock `get_weather` tool from `test/mock_weather_tool.ml`.

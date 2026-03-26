@@ -51,6 +51,12 @@ let run_agent_loop tool_registry ~post ~url ~headers fns prompt =
         Lwt.return (Ok {response= text})
     | ToolCallResponse {content; tool_calls} ->
         let messages = fns.append_assistant messages content tool_calls in
+        List.iter
+          (fun (tc : tool_call) ->
+            Logging.verbose
+              (Printf.sprintf "Calling tool \"%s\" with %s" tc.name
+                 (Yojson.Safe.to_string tc.arguments) ) )
+          tool_calls ;
         let tool_results =
           List.map (execute_tool_call tool_registry) tool_calls
         in
