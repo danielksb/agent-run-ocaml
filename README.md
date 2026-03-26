@@ -16,11 +16,11 @@ Invoke-RestMethod -Uri 'http://localhost:11434/api/chat' -Method Post -Body '{"m
 ```
 
 ```shell
-opam exec dune exec -- agent-run -- --vendor ollama --prompt "What is the current temperature in Berlin in Celsius?"
+dune exec -- agent-run --vendor ollama --prompt "What is the current temperature in Berlin in Celsius?"
 ```
 
 ```shell
-opam exec dune exec -- agent-run -- --vendor openai --model gpt-4.1-mini --prompt "What is the capital of Germany?"
+dune exec -- agent-run --vendor openai --model gpt-4.1-mini --prompt "What is the capital of Germany?"
 ```
 
 ## Tool Registry Profiles
