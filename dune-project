@@ -21,6 +21,7 @@
  (description "CLI-based LLM agent runner supporting OpenAI and Gemini APIs")
  (depends
   (ocaml (>= 5.4))
+  (cohttp-lwt-unix (>= 6.2))
   (ppx_deriving_yojson (>= 3.10))
   toml
   (alcotest :with-test))
