@@ -97,13 +97,14 @@ let parse_response body =
         Agent.ErrorResponse "Unknown error format"
   with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
-module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) :
-  Agent.AGENT = struct
+module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) = struct
   type t = {host: string; model: string}
 
   let create_with_options host = {host; model= "functiongemma"}
 
   let create () = Ok (create_with_options "http://localhost:11434")
+
+  let with_model agent model = {agent with model}
 
   let agent_loop agent prompt =
     let registry = Tools.registry in

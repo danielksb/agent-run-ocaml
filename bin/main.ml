@@ -19,6 +19,7 @@ let usage () =
   Printf.eprintf "Options:\n" ;
   Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
+  Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
   Printf.eprintf "  --config, -c  Path to TOML config file\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI\n" ;
@@ -27,7 +28,10 @@ let usage () =
 type vendor = OpenAi | Gemini | Ollama
 
 (** application parameters defined when starting the program *)
-type params = {vendor_name: string; config_path: string option}
+type params =
+  { vendor_name: string
+  ; config_path: string option
+  ; model_name: string option }
 
 (** Structural representation of all CLI parameters *)
 type cli_params = {prompt: string option; params: params}
@@ -35,7 +39,8 @@ type cli_params = {prompt: string option; params: params}
 (** Parses app parameters from argv *)
 let parse_params () =
   let default_params =
-    {prompt= None; params= {vendor_name= "openai"; config_path= None}}
+    { prompt= None
+    ; params= {vendor_name= "openai"; config_path= None; model_name= None} }
   in
   let rec loop argv params =
     match argv with
@@ -44,6 +49,9 @@ let parse_params () =
     | ("--config" | "-c") :: path :: rest ->
         loop rest
           {params with params= {params.params with config_path= Some path}}
+    | ("--model" | "-m") :: model :: rest ->
+        loop rest
+          {params with params= {params.params with model_name= Some model}}
     | ("--prompt" | "-p") :: prompt :: rest ->
         loop rest {params with prompt= Some prompt}
     | rest ->
@@ -70,15 +78,41 @@ module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient) (ProdTools)
 module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient) (ProdTools)
 module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient) (ProdTools)
 
-let run vendor app_config prompt =
+let run vendor app_config prompt model_name =
   match vendor with
   | OpenAi ->
-      run_agent (module OpenAiAgent) (OpenAiAgent.create ()) prompt
+      let agent_result =
+        Result.map
+          (fun agent ->
+            match model_name with
+            | Some model ->
+                OpenAiAgent.with_model agent model
+            | None ->
+                agent )
+          (OpenAiAgent.create ())
+      in
+      run_agent (module OpenAiAgent) agent_result prompt
   | Gemini ->
-      run_agent (module GeminiAgent) (GeminiAgent.create ()) prompt
+      let agent_result =
+        Result.map
+          (fun agent ->
+            match model_name with
+            | Some model ->
+                GeminiAgent.with_model agent model
+            | None ->
+                agent )
+          (GeminiAgent.create ())
+      in
+      run_agent (module GeminiAgent) agent_result prompt
   | Ollama ->
       let agent =
         OllamaAgent.create_with_options app_config.Config.ollama.url
+        |> fun agent ->
+        match model_name with
+        | Some model ->
+            OllamaAgent.with_model agent model
+        | None ->
+            agent
       in
       run_agent (module OllamaAgent) (Ok agent) prompt
 
@@ -86,7 +120,7 @@ let run_with_params params prompt =
   let config = Config.load params.config_path in
   match parse_vendor params.vendor_name with
   | Some vendor ->
-      run vendor config prompt
+      run vendor config prompt params.model_name
   | None ->
       Printf.eprintf "ERROR: unknown vendor \"%s\"\n" params.vendor_name ;
       exit 1

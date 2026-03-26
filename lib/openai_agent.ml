@@ -94,8 +94,7 @@ let parse_response body =
           Agent.ErrorResponse "Unknown error" )
   with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
-module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) :
-  Agent.AGENT = struct
+module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) = struct
   type t = {api_key: string; model: string; base_url: string}
 
   let create_with_options api_key =
@@ -107,6 +106,8 @@ module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) :
         Ok (create_with_options api_key)
     | None ->
         Error Agent.{message= "OPENAI_API_KEY environment variable not set"}
+
+  let with_model agent model = {agent with model}
 
   let agent_loop agent prompt =
     let registry = Tools.registry in
