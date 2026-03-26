@@ -75,7 +75,7 @@ module RealHttpClient : HTTP_CLIENT = struct
   open Lwt
 
   let post ~url ~headers ~body =
-    Printf.eprintf "DEBUG: Request body: %s\n" body ;
+    Logging.debug ("Request body: " ^ body) ;
     let cohttp_headers = Cohttp.Header.of_list headers in
     let cohttp_body = Cohttp_lwt.Body.of_string body in
     Cohttp_lwt_unix.Client.post ~body:cohttp_body ~headers:cohttp_headers
@@ -84,8 +84,8 @@ module RealHttpClient : HTTP_CLIENT = struct
     let code = Cohttp.Response.status resp |> Cohttp.Code.code_of_status in
     body |> Cohttp_lwt.Body.to_string
     >|= fun body_str ->
-    Printf.eprintf "DEBUG: Response code: %d\n" code ;
-    Printf.eprintf "DEBUG: Response body: %s\n" body_str ;
+    Logging.debug ("Response code: " ^ Int.to_string code) ;
+    Logging.debug ("Response body: " ^ body_str) ;
     (code, body_str)
 end
 
