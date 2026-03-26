@@ -16,11 +16,12 @@ let definition : Tool.t =
 
 let rec find_all_files file =
   try
-    if Sys.is_directory file && not (String.starts_with ~prefix:".git" file)
-    then
-      Sys.readdir file |> Array.to_seq
-      |> Seq.map (fun child -> file ^ "/" ^ child)
-      |> Seq.concat_map find_all_files
+    if Sys.is_directory file then
+      if Filename.basename file = ".git" then Seq.empty
+      else
+        Sys.readdir file |> Array.to_seq
+        |> Seq.map (fun child -> Filename.concat file child)
+        |> Seq.concat_map find_all_files
     else Seq.return file
   with Sys_error _ -> Seq.empty
 
