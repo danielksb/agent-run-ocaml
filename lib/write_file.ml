@@ -12,12 +12,14 @@ let definition : Tool.t =
                Tool.
                  { type_= "string"
                  ; description= Some "Path to the file to write."
-                 ; enum= None }
+                 ; enum= None
+                 ; items= None }
           |> Tool.StringMap.add "content"
                Tool.
                  { type_= "string"
                  ; description= Some "Content to write into the file."
-                 ; enum= None }
+                 ; enum= None
+                 ; items= None }
       ; required= ["file"; "content"] }
   ; strict= true }
 

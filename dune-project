@@ -22,6 +22,7 @@
  (depends
   (ocaml (>= 5.4))
   (cohttp-lwt-unix (>= 6.2))
+  base-unix
   (ppx_deriving_yojson (>= 3.10))
   toml
   (alcotest :with-test))

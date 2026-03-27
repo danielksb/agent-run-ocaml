@@ -12,12 +12,14 @@ let definition : Tool.t =
                Tool.
                  { type_= "string"
                  ; description= Some "City and region, e.g. Boston, MA"
-                 ; enum= None }
+                 ; enum= None
+                 ; items= None }
           |> Tool.StringMap.add "unit"
                Tool.
                  { type_= "string"
                  ; description= Some "Temperature unit"
-                 ; enum= Some ["celsius"; "fahrenheit"] }
+                 ; enum= Some ["celsius"; "fahrenheit"]
+                 ; items= None }
       ; required= ["location"; "unit"] }
   ; strict= true }
 

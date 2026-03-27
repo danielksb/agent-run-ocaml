@@ -12,9 +12,9 @@ let weather_tool : Tool.t =
       ; properties=
           Tool.StringMap.empty
           |> Tool.StringMap.add "location"
-               Tool.{type_= "string"; description= None; enum= None}
+               Tool.{type_= "string"; description= None; enum= None; items= None}
           |> Tool.StringMap.add "unit"
-               Tool.{type_= "string"; description= None; enum= None}
+               Tool.{type_= "string"; description= None; enum= None; items= None}
       ; required= ["location"] }
   ; strict= false }
 

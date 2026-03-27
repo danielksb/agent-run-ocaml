@@ -24,7 +24,8 @@ let string_map_of_yojson value_of_yojson = function
 type property =
   { type_: string [@key "type"]
   ; description: string option [@default None]
-  ; enum: string list option [@default None] }
+  ; enum: string list option [@default None]
+  ; items: property option [@default None] }
 [@@deriving yojson]
 
 type parameters =

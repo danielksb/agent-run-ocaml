@@ -10,7 +10,8 @@ let definition : Tool.t =
                Tool.
                  { type_= "string"
                  ; description= Some "Directory which files to list."
-                 ; enum= None }
+                 ; enum= None
+                 ; items= None }
       ; required= ["directory"] }
   ; strict= true }
 

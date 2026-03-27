@@ -1,5 +1,5 @@
 (library
  (name agentlib)
- (libraries cohttp-lwt-unix yojson toml)
+ (libraries cohttp-lwt-unix yojson toml unix)
  (preprocess
   (pps ppx_deriving_yojson ppx_deriving.show ppx_deriving.eq)))

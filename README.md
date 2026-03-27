@@ -6,6 +6,17 @@ The primary goal of this project is to learn OCaml and play around with differen
 
 Future versions might publish the library component in order to use it in other projects.
 
+## Built-in Tools
+
+- `list_files`
+- `read_file`
+- `write_file`
+- `exec_program`: executes a program via `Unix.execvpe` and returns:
+  - `status code: <n>`
+  - combined stdout/stderr output
+
+`exec_program` can run any executable available in `PATH`. This is powerful but high-risk; only use it in trusted environments.
+
 ## How To Run
 
 Build and run with `dune exec`:

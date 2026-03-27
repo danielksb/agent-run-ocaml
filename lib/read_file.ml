@@ -10,7 +10,8 @@ let definition : Tool.t =
                Tool.
                  { type_= "string"
                  ; description= Some "Path to the file to read."
-                 ; enum= None }
+                 ; enum= None
+                 ; items= None }
       ; required= ["file"] }
   ; strict= true }
 
