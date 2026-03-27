@@ -31,6 +31,15 @@ You can also choose a specific model:
 dune exec -- agent-run --vendor openai --model gpt-4.1-mini --prompt "What is the capital of Germany?"
 ```
 
+You can provide a skill file:
+
+```shell
+dune exec -- agent-run --vendor openai --skill ./my-skill/SKILL.md --prompt "Help me process PDFs"
+```
+
+When `--skill`/`-s` is used, Agent Run parses the SKILL frontmatter and injects it into the initial request context with instructions to read the full `SKILL.md` through `read_file` if detailed instructions are needed.
+You can provide `--skill` multiple times to attach more than one skill.
+
 Set credentials when needed:
 
 - `OPENAI_API_KEY` for `--vendor openai`

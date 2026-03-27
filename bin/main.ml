@@ -22,7 +22,9 @@ let usage () =
   Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
   Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
-  Printf.eprintf "  --config, -c  Path to TOML config file\n\n" ;
+  Printf.eprintf "  --config, -c  Path to TOML config file\n" ;
+  Printf.eprintf
+    "  --skill, -s   Path to SKILL.md file (can be repeated)\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI\n" ;
   Printf.eprintf "  GEMINI_API_KEY - API key for Gemini\n"
@@ -33,6 +35,7 @@ type vendor = OpenAi | Gemini | Ollama
 type params =
   { vendor_name: string
   ; config_path: string option
+  ; skill_paths: string list
   ; model_name: string option
   ; debug: bool
   ; verbose: bool }
@@ -47,6 +50,7 @@ let parse_params () =
     ; params=
         { vendor_name= "openai"
         ; config_path= None
+        ; skill_paths= []
         ; model_name= None
         ; debug= false
         ; verbose= false } }
@@ -62,6 +66,9 @@ let parse_params () =
     | ("--config" | "-c") :: path :: rest ->
         loop rest
           {params with params= {params.params with config_path= Some path}}
+    | ("--skill" | "-s") :: path :: rest ->
+        loop rest
+          {params with params= {params.params with skill_paths= path :: params.params.skill_paths}}
     | ("--model" | "-m") :: model :: rest ->
         loop rest
           {params with params= {params.params with model_name= Some model}}
@@ -137,6 +144,29 @@ let run_with_params params prompt =
   else if params.verbose then Logging.set_level Logging.Verbose
   else Logging.set_level Logging.Normal ;
   let config = Config.load params.config_path in
+  let prompt =
+    match List.rev params.skill_paths with
+    | [] ->
+        prompt
+    | skill_paths ->
+        let parsed_skills =
+          List.map
+            (fun skill_path ->
+              let absolute_path =
+                if Filename.is_relative skill_path then
+                  Filename.concat (Sys.getcwd ()) skill_path
+                else skill_path
+              in
+              match Skill.from_file absolute_path with
+              | Ok skill ->
+                  skill
+              | Error msg ->
+                  Printf.eprintf "ERROR: %s\n" msg ;
+                  exit 1 )
+            skill_paths
+        in
+        Skill.augment_prompt_many ~original_prompt:prompt ~skills:parsed_skills
+  in
   match parse_vendor params.vendor_name with
   | Some vendor ->
       run vendor config prompt params
