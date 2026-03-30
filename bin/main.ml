@@ -1,18 +1,5 @@
 open Agentlib
 
-let handle_result = function
-  | Error (error : Agent.agent_error) ->
-      Printf.fprintf stderr "ERROR: %s\n" error.message ;
-      exit 1
-  | Ok (response : Agent.agent_response) ->
-      print_endline response.response
-
-let run_agent (type a) (module A : Agent.AGENT with type t = a)
-    (agent_result : (a, Agent.agent_error) result) prompt =
-  Result.bind agent_result (fun agent ->
-      A.agent_loop agent prompt |> Lwt_main.run )
-  |> handle_result
-
 let usage () =
   Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
   Printf.eprintf "Usage: agent-run [options] <prompt>\n\n" ;
@@ -90,6 +77,19 @@ end
 module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient) (ProdTools)
 module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient) (ProdTools)
 module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient) (ProdTools)
+
+let handle_result = function
+  | Error (error : Agent.agent_error) ->
+      Printf.fprintf stderr "ERROR: %s\n" error.message ;
+      exit 1
+  | Ok (response : Agent.agent_response) ->
+      print_endline response.response
+
+let run_agent (type a) (module A : Agent.AGENT with type t = a)
+    (agent_result : (a, Agent.agent_error) result) prompt =
+  Result.bind agent_result (fun agent ->
+      A.agent_loop agent prompt |> Lwt_main.run )
+  |> handle_result
 
 let run vendor app_config prompt params =
   match vendor with
