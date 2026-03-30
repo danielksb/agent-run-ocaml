@@ -14,8 +14,8 @@ let contains text pattern =
 
 let command_for_simple_output () =
   if Sys.win32 then
-    ("powershell.exe", [ "-NoProfile"; "-Command"; "Write-Output hello" ])
-  else ("sh", [ "-c"; "echo hello" ])
+    ("powershell.exe", ["-NoProfile"; "-Command"; "Write-Output hello"])
+  else ("sh", ["-c"; "echo hello"])
 
 let command_for_mixed_streams_nonzero () =
   if Sys.win32 then
@@ -23,16 +23,17 @@ let command_for_mixed_streams_nonzero () =
     , [ "-NoProfile"
       ; "-Command"
       ; "Write-Output out; [Console]::Error.WriteLine('err'); exit 7" ] )
-  else ("sh", [ "-c"; "echo out; echo err 1>&2; exit 7" ])
+  else ("sh", ["-c"; "echo out; echo err 1>&2; exit 7"])
 
 let command_for_argument_echo value =
-  if Sys.win32 then
-    ("cmd.exe", ["/c"; "echo"; value])
-  else ("sh", [ "-c"; "printf '%s\\n' \"$1\"" ; "ignored-zero"; value ])
+  if Sys.win32 then ("cmd.exe", ["/c"; "echo"; value])
+  else ("sh", ["-c"; "printf '%s\\n' \"$1\""; "ignored-zero"; value])
 
 let run_exec program args =
   Exec_program.run
-    (`Assoc [ ("program", `String program); ("args", `List (List.map (fun s -> `String s) args)) ])
+    (`Assoc
+       [ ("program", `String program)
+       ; ("args", `List (List.map (fun s -> `String s) args)) ] )
 
 let test_success_exit_code_zero () =
   let program, args = command_for_simple_output () in
@@ -45,7 +46,8 @@ let test_success_exit_code_zero () =
         Alcotest.fail ("exec_program should succeed, got error: " ^ e)
   in
   Alcotest.(check bool)
-    "status code is zero" true (contains output "status code: 0") ;
+    "status code is zero" true
+    (contains output "status code: 0") ;
   Alcotest.(check bool) "stdout is present" true (contains output "hello")
 
 let test_nonzero_exit_and_combined_streams () =
@@ -59,7 +61,8 @@ let test_nonzero_exit_and_combined_streams () =
         Alcotest.fail ("exec_program should succeed, got error: " ^ e)
   in
   Alcotest.(check bool)
-    "non-zero status reported" true (contains output "status code: 7") ;
+    "non-zero status reported" true
+    (contains output "status code: 7") ;
   Alcotest.(check bool) "stdout is present" true (contains output "out") ;
   Alcotest.(check bool) "stderr is present" true (contains output "err")
 
@@ -80,8 +83,7 @@ let test_missing_program_validation_error () =
   let result = Exec_program.run (`Assoc [("args", `List [`String "x"])]) in
   Alcotest.(check string_result_testable)
     "missing required program is rejected"
-    (Error "missing required argument: program")
-    result
+    (Error "missing required argument: program") result
 
 let test_wrong_args_type_validation_error () =
   let result =
@@ -90,7 +92,9 @@ let test_wrong_args_type_validation_error () =
   in
   Alcotest.(check string_result_testable)
     "wrong args type is rejected"
-    (Error "Cannot call tool 'exec_program': argument 'args' must be an array of strings")
+    (Error
+       "Cannot call tool 'exec_program': argument 'args' must be an array of \
+        strings" )
     result
 
 let tests =

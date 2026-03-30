@@ -42,25 +42,34 @@ let parse_frontmatter_lines skill_path lines =
     | [] ->
         if in_metadata then Ok {acc with metadata= List.rev acc.metadata}
         else Ok acc
-    | line :: tl ->
+    | line :: tl -> (
         let trimmed = String.trim line in
         if trimmed = "" then loop acc in_metadata tl
-        else if in_metadata && (String.starts_with ~prefix:" " line || String.starts_with ~prefix:"\t" line) then
+        else if
+          in_metadata
+          && ( String.starts_with ~prefix:" " line
+             || String.starts_with ~prefix:"\t" line )
+        then
           let entry = String.trim line in
-          (match split_key_value entry with
+          match split_key_value entry with
           | Some (k, v) when k <> "" ->
-              loop {acc with metadata= (k, strip_quotes v) :: acc.metadata} true tl
+              loop
+                {acc with metadata= (k, strip_quotes v) :: acc.metadata}
+                true tl
           | _ ->
               Error
-                "Invalid metadata entry in skill frontmatter. Expected \
-                 'key: value'." )
+                "Invalid metadata entry in skill frontmatter. Expected 'key: \
+                 value'."
         else
-          let acc = if in_metadata then {acc with metadata= List.rev acc.metadata} else acc in
+          let acc =
+            if in_metadata then {acc with metadata= List.rev acc.metadata}
+            else acc
+          in
           match split_key_value line with
           | None ->
               Error
-                ("Invalid frontmatter line: " ^ line
-               ^ ". Expected 'key: value'.")
+                ( "Invalid frontmatter line: " ^ line
+                ^ ". Expected 'key: value'." )
           | Some ("metadata", "") ->
               loop acc true tl
           | Some ("name", value) ->
@@ -74,7 +83,7 @@ let parse_frontmatter_lines skill_path lines =
           | Some ("allowed-tools", value) ->
               loop {acc with allowed_tools= Some (strip_quotes value)} false tl
           | Some (_unknown, _value) ->
-              loop acc false tl
+              loop acc false tl )
   in
   loop
     { name= None
@@ -110,8 +119,8 @@ let validate_required_fields (skill : t) =
         Ok ()
     | _ ->
         Error
-          ("Invalid SKILL.md: missing required frontmatter field '" ^ field_name
-         ^ "'.")
+          ( "Invalid SKILL.md: missing required frontmatter field '"
+          ^ field_name ^ "'." )
   in
   Result.bind (required "name" skill.name) (fun () ->
       required "description" skill.description |> Result.map (fun () -> skill) )
@@ -121,14 +130,13 @@ let from_file skill_path =
     let content = In_channel.with_open_bin skill_path In_channel.input_all in
     let lines = split_lines content in
     Result.bind (extract_frontmatter lines) (fun (frontmatter, _body) ->
-        Result.bind (parse_frontmatter_lines skill_path frontmatter)
+        Result.bind
+          (parse_frontmatter_lines skill_path frontmatter)
           validate_required_fields )
   with Sys_error msg -> Error ("Cannot read skill file: " ^ msg)
 
 let metadata_lines metadata =
-  metadata
-  |> List.map (fun (k, v) -> "- " ^ k ^ ": " ^ v)
-  |> String.concat "\n"
+  metadata |> List.map (fun (k, v) -> "- " ^ k ^ ": " ^ v) |> String.concat "\n"
 
 let optional_line label = function
   | Some v when String.trim v <> "" ->
@@ -157,8 +165,8 @@ let augment_prompt_many ~original_prompt ~skills =
   let blocks =
     skills
     |> List.mapi (fun i skill ->
-           String.concat "\n"
-             [ Printf.sprintf "Skill %d:" (i + 1); frontmatter_block skill ] )
+        String.concat "\n"
+          [Printf.sprintf "Skill %d:" (i + 1); frontmatter_block skill] )
     |> String.concat "\n\n"
   in
   String.concat "\n"

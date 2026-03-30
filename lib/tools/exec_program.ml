@@ -17,8 +17,7 @@ let definition : Tool.t =
           |> Tool.StringMap.add "args"
                Tool.
                  { type_= "array"
-                 ; description=
-                     Some "Command-line arguments as list of strings"
+                 ; description= Some "Command-line arguments as list of strings"
                  ; enum= None
                  ; items=
                      Some
@@ -27,10 +26,11 @@ let definition : Tool.t =
                          ; description= None
                          ; enum= None
                          ; items= None } }
-        ; required= ["program"; "args"] }
+      ; required= ["program"; "args"] }
   ; strict= true }
 
-let prefixed_error message = Error ("Cannot call tool 'exec_program': " ^ message)
+let prefixed_error message =
+  Error ("Cannot call tool 'exec_program': " ^ message)
 
 let read_all_fd fd =
   let buf = Buffer.create 4096 in
@@ -43,8 +43,7 @@ let read_all_fd fd =
         Buffer.add_subbytes buf chunk 0 n ;
         loop ()
   in
-  loop () ;
-  Buffer.contents buf
+  loop () ; Buffer.contents buf
 
 let status_to_code = function
   | Unix.WEXITED code ->
@@ -77,10 +76,7 @@ let execute_windows ~program ~argv ~envp =
     let _, status = Unix.waitpid [] pid in
     let status_code = status_to_code status in
     Ok (Printf.sprintf "status code: %d\n%s" status_code output)
-  with exn ->
-    Unix.close read_fd ;
-    Unix.close write_fd ;
-    raise exn
+  with exn -> Unix.close read_fd ; Unix.close write_fd ; raise exn
 
 let execute_posix ~program ~argv ~envp =
   let read_fd, write_fd = Unix.pipe () in
@@ -103,8 +99,7 @@ let execute ~program ~args =
     if Sys.win32 then execute_windows ~program ~argv ~envp
     else execute_posix ~program ~argv ~envp
   with Unix.Unix_error (err, fn, arg) ->
-    prefixed_error
-      (Printf.sprintf "%s (%s %s)" (Unix.error_message err) fn arg)
+    prefixed_error (Printf.sprintf "%s (%s %s)" (Unix.error_message err) fn arg)
 
 let parse_program args =
   try Ok (Yojson.Safe.Util.member "program" args |> Yojson.Safe.Util.to_string)

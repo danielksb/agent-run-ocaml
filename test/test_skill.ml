@@ -34,8 +34,7 @@ let with_temp_skill content f =
   close_out out ;
   Fun.protect
     (fun () -> f path)
-    ~finally:(fun () ->
-      if Sys.file_exists path then Sys.remove path )
+    ~finally:(fun () -> if Sys.file_exists path then Sys.remove path)
 
 let test_parse_minimal_frontmatter () =
   let content =
@@ -59,8 +58,8 @@ let test_parse_minimal_frontmatter () =
             ; allowed_tools= None
             ; skill_path= path }
       in
-      Alcotest.(check skill_result_testable) "minimal skill is parsed" expected
-        result )
+      Alcotest.(check skill_result_testable)
+        "minimal skill is parsed" expected result )
 
 let test_parse_optional_fields_and_metadata () =
   let content =
@@ -83,8 +82,7 @@ let test_parse_optional_fields_and_metadata () =
           Alcotest.fail ("expected parse success, got: " ^ e)
       | Ok parsed ->
           Alcotest.(check (option string))
-            "license parsed" (Some "Apache-2.0")
-            parsed.license ;
+            "license parsed" (Some "Apache-2.0") parsed.license ;
           Alcotest.(check (option string))
             "compatibility parsed" (Some "Requires git and network")
             parsed.compatibility ;
@@ -99,10 +97,7 @@ let test_parse_optional_fields_and_metadata () =
 let test_missing_frontmatter_delimiters () =
   let content =
     String.concat "\n"
-      [ "name: bad"
-      ; "description: missing delimiter"
-      ; "---"
-      ; "Body content" ]
+      ["name: bad"; "description: missing delimiter"; "---"; "Body content"]
   in
   with_temp_skill content (fun path ->
       let result = Skill.from_file path in
@@ -110,25 +105,19 @@ let test_missing_frontmatter_delimiters () =
         "missing frontmatter start fails"
         (Error
            "Invalid SKILL.md: file must start with frontmatter delimiter '---'."
-        )
-        result )
+        ) result )
 
 let test_missing_required_fields () =
   let content =
-    String.concat "\n"
-      [ "---"
-      ; "name: incomplete-skill"
-      ; "---"
-      ; "Body content" ]
+    String.concat "\n" ["---"; "name: incomplete-skill"; "---"; "Body content"]
   in
   with_temp_skill content (fun path ->
       let result = Skill.from_file path in
       Alcotest.(check skill_result_testable)
         "missing description fails"
         (Error
-           "Invalid SKILL.md: missing required frontmatter field \
-            'description'." )
-        result )
+           "Invalid SKILL.md: missing required frontmatter field 'description'."
+        ) result )
 
 let test_prompt_augmentation () =
   let skill =
@@ -182,9 +171,11 @@ let test_prompt_augmentation_many_skills () =
     Skill.augment_prompt_many ~original_prompt ~skills:[skill1; skill2]
   in
   Alcotest.(check bool)
-    "contains first skill" true (contains augmented "Skill 1:") ;
+    "contains first skill" true
+    (contains augmented "Skill 1:") ;
   Alcotest.(check bool)
-    "contains second skill" true (contains augmented "Skill 2:") ;
+    "contains second skill" true
+    (contains augmented "Skill 2:") ;
   Alcotest.(check bool)
     "contains second skill path" true
     (contains augmented "C:/skills/pdf/SKILL.md") ;
@@ -202,7 +193,6 @@ let tests =
         test_missing_frontmatter_delimiters
     ; Alcotest.test_case "missing required fields" `Quick
         test_missing_required_fields
-    ; Alcotest.test_case "prompt augmentation" `Quick
-        test_prompt_augmentation
+    ; Alcotest.test_case "prompt augmentation" `Quick test_prompt_augmentation
     ; Alcotest.test_case "prompt augmentation many skills" `Quick
         test_prompt_augmentation_many_skills ] )
