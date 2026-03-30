@@ -23,8 +23,7 @@ let usage () =
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
   Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
   Printf.eprintf "  --config, -c  Path to TOML config file\n" ;
-  Printf.eprintf
-    "  --skill, -s   Path to SKILL.md file (can be repeated)\n\n" ;
+  Printf.eprintf "  --skill, -s   Path to SKILL.md file (can be repeated)\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI\n" ;
   Printf.eprintf "  GEMINI_API_KEY - API key for Gemini\n"
@@ -38,40 +37,34 @@ type params =
   ; skill_paths: string list
   ; model_name: string option
   ; debug: bool
-  ; verbose: bool }
-
-(** Structural representation of all CLI parameters *)
-type cli_params = {prompt: string option; params: params}
+  ; verbose: bool
+  ; prompt: string option }
 
 (** Parses app parameters from argv *)
 let parse_params () =
   let default_params =
-    { prompt= None
-    ; params=
-        { vendor_name= "openai"
-        ; config_path= None
-        ; skill_paths= []
-        ; model_name= None
-        ; debug= false
-        ; verbose= false } }
+    { vendor_name= "openai"
+    ; config_path= None
+    ; skill_paths= []
+    ; model_name= None
+    ; debug= false
+    ; verbose= false
+    ; prompt= None }
   in
   let rec loop argv params =
     match argv with
     | ("--debug" | "-d") :: rest ->
-        loop rest {params with params= {params.params with debug= true}}
+        loop rest {params with debug= true}
     | ("--verbose" | "-V") :: rest ->
-        loop rest {params with params= {params.params with verbose= true}}
+        loop rest {params with verbose= true}
     | ("--vendor" | "-v") :: vendor :: rest ->
-        loop rest {params with params= {params.params with vendor_name= vendor}}
+        loop rest {params with vendor_name= vendor}
     | ("--config" | "-c") :: path :: rest ->
-        loop rest
-          {params with params= {params.params with config_path= Some path}}
+        loop rest {params with config_path= Some path}
     | ("--skill" | "-s") :: path :: rest ->
-        loop rest
-          {params with params= {params.params with skill_paths= path :: params.params.skill_paths}}
+        loop rest {params with skill_paths= path :: params.skill_paths}
     | ("--model" | "-m") :: model :: rest ->
-        loop rest
-          {params with params= {params.params with model_name= Some model}}
+        loop rest {params with model_name= Some model}
     | ("--prompt" | "-p") :: prompt :: rest ->
         loop rest {params with prompt= Some prompt}
     | rest ->
@@ -175,11 +168,15 @@ let run_with_params params prompt =
       exit 1
 
 let () =
-  let all_params = parse_params () in
-  match all_params with
-  | {prompt= None; _} ->
-      Printf.eprintf "ERROR: no prompt was given\n" ;
-      usage () ;
-      exit 1
-  | {prompt= Some prompt; params} ->
+  let params = parse_params () in
+  match params.prompt with
+  | None ->
+      let prompt = In_channel.input_all stdin in
       run_with_params params prompt
+  | Some prompt ->
+      (* if the prompt is a file path then the content of the file will be the
+         actual prompt *)
+      if Sys.file_exists prompt && Sys.is_regular_file prompt then
+        let actual_prompt = open_in prompt |> In_channel.input_all in
+        run_with_params params actual_prompt
+      else run_with_params params prompt
