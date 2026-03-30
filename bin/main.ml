@@ -10,6 +10,7 @@ let usage () =
   Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
   Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
+  Printf.eprintf "  --base-url, -b Base URL override for selected vendor\n" ;
   Printf.eprintf "  --config, -c  Path to TOML config file\n" ;
   Printf.eprintf "  --skill, -s   Path to SKILL.md file (can be repeated)\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
@@ -24,6 +25,7 @@ type params =
   ; config_path: string option
   ; skill_paths: string list
   ; model_name: string option
+  ; base_url: string option
   ; debug: bool
   ; verbose: bool
   ; prompt: string option }
@@ -35,6 +37,7 @@ let parse_params () =
     ; config_path= None
     ; skill_paths= []
     ; model_name= None
+    ; base_url= None
     ; debug= false
     ; verbose= false
     ; prompt= None }
@@ -53,6 +56,8 @@ let parse_params () =
         loop rest {params with skill_paths= path :: params.skill_paths}
     | ("--model" | "-m") :: model :: rest ->
         loop rest {params with model_name= Some model}
+    | ("--base-url" | "-b") :: base_url :: rest ->
+        loop rest {params with base_url= Some base_url}
     | ("--prompt" | "-p") :: prompt :: rest ->
         loop rest {params with prompt= Some prompt}
     | rest ->
@@ -92,58 +97,47 @@ let run_agent (type a) (module A : Agent.AGENT with type t = a)
       A.agent_loop agent prompt |> Lwt_main.run )
   |> handle_result
 
-let resolve_model ~cli_model ~config_model ~hardcoded_default =
-  match cli_model with
-  | Some model ->
-      model
-  | None ->
-      Option.value config_model ~default:hardcoded_default
-
 let run vendor app_config prompt params =
   match vendor with
   | OpenAi ->
       let model_name =
-        resolve_model ~cli_model:params.model_name
-          ~config_model:app_config.openai.model ~hardcoded_default:"gpt-4o-mini"
+        Option.value params.model_name ~default:app_config.openai.model
+      in
+      let base_url =
+        Option.value params.base_url ~default:app_config.openai.base_url
       in
       let agent_result =
         match Sys.getenv_opt "OPENAI_API_KEY" with
         | Some api_key ->
-            Ok
-              (OpenAiAgent.create
-                 {model_name; api_key; base_url= "https://api.openai.com"} )
+            Ok (OpenAiAgent.create {model_name; api_key; base_url})
         | None ->
             Error Agent.{message= "OPENAI_API_KEY environment variable not set"}
       in
       run_agent (module OpenAiAgent) agent_result prompt
   | Gemini ->
       let model_name =
-        resolve_model ~cli_model:params.model_name
-          ~config_model:app_config.gemini.model
-          ~hardcoded_default:"gemini-flash-latest"
+        Option.value params.model_name ~default:app_config.gemini.model
+      in
+      let base_url =
+        Option.value params.base_url ~default:app_config.gemini.base_url
       in
       let agent_result =
         match Sys.getenv_opt "GEMINI_API_KEY" with
         | Some api_key ->
-            Ok
-              (GeminiAgent.create
-                 { model_name
-                 ; api_key
-                 ; base_url= "https://generativelanguage.googleapis.com" } )
+            Ok (GeminiAgent.create {model_name; api_key; base_url})
         | None ->
             Error Agent.{message= "GEMINI_API_KEY environment variable not set"}
       in
       run_agent (module GeminiAgent) agent_result prompt
   | Ollama ->
       let model_name =
-        resolve_model ~cli_model:params.model_name
-          ~config_model:app_config.ollama.model
-          ~hardcoded_default:"functiongemma"
+        Option.value params.model_name ~default:app_config.ollama.model
+      in
+      let base_url =
+        Option.value params.base_url ~default:app_config.ollama.base_url
       in
       let agent_result =
-        Ok
-          (OllamaAgent.create
-             {model_name; api_key= ""; base_url= app_config.ollama.url} )
+        Ok (OllamaAgent.create {model_name; api_key= ""; base_url})
       in
       run_agent (module OllamaAgent) agent_result prompt
 

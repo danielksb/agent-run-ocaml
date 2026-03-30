@@ -55,12 +55,14 @@ All vendor sections are optional:
 ```toml
 [openai]
 model = "gpt-4.1-mini"
+base_url = "https://api.openai.com"
 
 [gemini]
 model = "gemini-2.5-flash"
+base_url = "https://generativelanguage.googleapis.com"
 
 [ollama]
-url = "http://localhost:11434"
+base_url = "http://localhost:11434"
 model = "functiongemma"
 ```
 
@@ -68,6 +70,11 @@ Model precedence is:
 1. `--model` / `-m`
 2. vendor `model` from config
 3. built-in defaults (`gpt-4o-mini`, `gemini-flash-latest`, `functiongemma`)
+
+Base URL precedence is:
+1. `--base-url` / `-b`
+2. vendor `base_url` from config
+3. built-in defaults (`https://api.openai.com`, `https://generativelanguage.googleapis.com`, `http://localhost:11434`)
 
 ## Running Ollama
 

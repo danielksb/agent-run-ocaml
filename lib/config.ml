@@ -1,15 +1,13 @@
-type vendor = {model: string option}
+type vendor = {model: string; base_url: string}
 
-type ollama =
-  {url: string; model: string option}
-
-type t =
-  {openai: vendor; gemini: vendor; ollama: ollama}
+type t = {openai: vendor; gemini: vendor; ollama: vendor}
 
 let default =
-  { openai= {model= None}
-  ; gemini= {model= None}
-  ; ollama= {url= "http://localhost:11434"; model= None} }
+  { openai= {model= "gpt-4o-mini"; base_url= "https://api.openai.com"}
+  ; gemini=
+      { model= "gemini-flash-latest"
+      ; base_url= "https://generativelanguage.googleapis.com" }
+  ; ollama= {model= "functiongemma"; base_url= "http://localhost:11434"} }
 
 let home_dir () =
   match Sys.getenv_opt "HOME" with
@@ -25,24 +23,45 @@ let openai_model_lens = Toml.Lenses.(field "openai" |-- key "model" |-- string)
 
 let gemini_model_lens = Toml.Lenses.(field "gemini" |-- key "model" |-- string)
 
-let ollama_url_lens = Toml.Lenses.(field "ollama" |-- key "url" |-- string)
-
 let ollama_model_lens = Toml.Lenses.(field "ollama" |-- key "model" |-- string)
 
+let openai_base_url_lens =
+  Toml.Lenses.(field "openai" |-- key "base_url" |-- string)
+
+let gemini_base_url_lens =
+  Toml.Lenses.(field "gemini" |-- key "base_url" |-- string)
+
+let ollama_base_url_lens =
+  Toml.Lenses.(field "ollama" |-- key "base_url" |-- string)
+
 let of_toml (table : Toml.Types.table) =
-  let openai_model = Toml.Lenses.get table openai_model_lens in
-  let gemini_model = Toml.Lenses.get table gemini_model_lens in
-  let ollama_url =
-    match Toml.Lenses.get table ollama_url_lens with
-    | Some u ->
-        u
-    | None ->
-        default.ollama.url
+  let openai_model =
+    Toml.Lenses.get table openai_model_lens
+    |> Option.value ~default:default.openai.model
   in
-  let ollama_model = Toml.Lenses.get table ollama_model_lens in
-  { openai= {model= openai_model}
-  ; gemini= {model= gemini_model}
-  ; ollama= {url= ollama_url; model= ollama_model} }
+  let gemini_model =
+    Toml.Lenses.get table gemini_model_lens
+    |> Option.value ~default:default.gemini.model
+  in
+  let ollama_model =
+    Toml.Lenses.get table ollama_model_lens
+    |> Option.value ~default:default.ollama.model
+  in
+  let openai_base_url =
+    Toml.Lenses.get table openai_base_url_lens
+    |> Option.value ~default:default.openai.base_url
+  in
+  let gemini_base_url =
+    Toml.Lenses.get table gemini_base_url_lens
+    |> Option.value ~default:default.gemini.base_url
+  in
+  let ollama_base_url =
+    Toml.Lenses.get table ollama_base_url_lens
+    |> Option.value ~default:default.ollama.base_url
+  in
+  { openai= {model= openai_model; base_url= openai_base_url}
+  ; gemini= {model= gemini_model; base_url= gemini_base_url}
+  ; ollama= {model= ollama_model; base_url= ollama_base_url} }
 
 let from_file path =
   match Toml.Parser.from_filename path with
