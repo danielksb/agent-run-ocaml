@@ -45,6 +45,30 @@ Set credentials when needed:
 - `OPENAI_API_KEY` for `--vendor openai`
 - `GEMINI_API_KEY` for `--vendor gemini`
 
+## Configuration File
+
+Agent Run can load a TOML config file via `--config /path/to/config.toml`.
+If `--config` is not provided, it will try `~/.agent-run.toml`.
+
+All vendor sections are optional:
+
+```toml
+[openai]
+model = "gpt-4.1-mini"
+
+[gemini]
+model = "gemini-2.5-flash"
+
+[ollama]
+url = "http://localhost:11434"
+model = "functiongemma"
+```
+
+Model precedence is:
+1. `--model` / `-m`
+2. vendor `model` from config
+3. built-in defaults (`gpt-4o-mini`, `gemini-flash-latest`, `functiongemma`)
+
 ## Running Ollama
 
 ```shell

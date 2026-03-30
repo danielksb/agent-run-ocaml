@@ -1,4 +1,5 @@
 open Agentlib
+open Config
 
 let usage () =
   Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
@@ -91,10 +92,20 @@ let run_agent (type a) (module A : Agent.AGENT with type t = a)
       A.agent_loop agent prompt |> Lwt_main.run )
   |> handle_result
 
+let resolve_model ~cli_model ~config_model ~hardcoded_default =
+  match cli_model with
+  | Some model ->
+      model
+  | None ->
+      Option.value config_model ~default:hardcoded_default
+
 let run vendor app_config prompt params =
   match vendor with
   | OpenAi ->
-      let model_name = Option.value params.model_name ~default:"gpt-4o-mini" in
+      let model_name =
+        resolve_model ~cli_model:params.model_name
+          ~config_model:app_config.openai.model ~hardcoded_default:"gpt-4o-mini"
+      in
       let agent_result =
         match Sys.getenv_opt "OPENAI_API_KEY" with
         | Some api_key ->
@@ -107,7 +118,9 @@ let run vendor app_config prompt params =
       run_agent (module OpenAiAgent) agent_result prompt
   | Gemini ->
       let model_name =
-        Option.value params.model_name ~default:"gemini-flash-latest"
+        resolve_model ~cli_model:params.model_name
+          ~config_model:app_config.gemini.model
+          ~hardcoded_default:"gemini-flash-latest"
       in
       let agent_result =
         match Sys.getenv_opt "GEMINI_API_KEY" with
@@ -123,12 +136,14 @@ let run vendor app_config prompt params =
       run_agent (module GeminiAgent) agent_result prompt
   | Ollama ->
       let model_name =
-        Option.value params.model_name ~default:"functiongemma"
+        resolve_model ~cli_model:params.model_name
+          ~config_model:app_config.ollama.model
+          ~hardcoded_default:"functiongemma"
       in
       let agent_result =
         Ok
           (OllamaAgent.create
-             {model_name; api_key= ""; base_url= "http://localhost:11434"} )
+             {model_name; api_key= ""; base_url= app_config.ollama.url} )
       in
       run_agent (module OllamaAgent) agent_result prompt
 
