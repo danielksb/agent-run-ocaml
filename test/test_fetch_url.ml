@@ -18,7 +18,7 @@ let test_fetch_url_uses_http_mock () =
             ~response_status:200 ~response_body_path ]
       in
       let mock_client, assert_all_matched = Http_mock.make expectations in
-      let module Http = (val mock_client : Agent.HTTP_CLIENT) in
+      let module Http = (val mock_client : Http_client.S) in
       let module FetchUrl = Fetch_url.Make (Http) in
       let result =
         Lwt_main.run

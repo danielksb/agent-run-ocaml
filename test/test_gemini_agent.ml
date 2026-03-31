@@ -24,7 +24,7 @@ module TestConfig = struct
   let tool_final_request_path = "data/gemini/tool_final_request.json"
 end
 
-module GeminiMakeAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT =
+module GeminiMakeAgent (Http : Http_client.S) : Agent.AGENT =
   Agentlib.Gemini_agent.Make (Http) (Test_tools_provider)
 
 module T = Agent_test.Make (GeminiMakeAgent) (TestConfig)

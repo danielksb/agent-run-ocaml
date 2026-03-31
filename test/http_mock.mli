@@ -14,11 +14,11 @@ val expect_post :
 val expect_get :
   url:string -> response_status:int -> response_body_path:string -> interaction
 
-val make : interaction list -> (module Agent.HTTP_CLIENT) * (unit -> unit)
+val make : interaction list -> (module Http_client.S) * (unit -> unit)
 (**
   Creates a strict mock HTTP client.
   Each expected interaction can be used at most once.
 *)
 
 val post_always_from_file :
-  response_status:int -> response_body_path:string -> (module Agent.HTTP_CLIENT)
+  response_status:int -> response_body_path:string -> (module Http_client.S)

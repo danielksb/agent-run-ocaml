@@ -80,9 +80,10 @@ module ProdTools = struct
   let registry = Tool_registry.default_registry ()
 end
 
-module OpenAiAgent = Openai_agent.Make (Agent.RealHttpClient) (ProdTools)
-module OllamaAgent = Ollama_agent.Make (Agent.RealHttpClient) (ProdTools)
-module GeminiAgent = Gemini_agent.Make (Agent.RealHttpClient) (ProdTools)
+module DefaultHttpClient = Http_client.Default
+module OpenAiAgent = Openai_agent.Make (DefaultHttpClient) (ProdTools)
+module OllamaAgent = Ollama_agent.Make (DefaultHttpClient) (ProdTools)
+module GeminiAgent = Gemini_agent.Make (DefaultHttpClient) (ProdTools)
 
 let handle_result = function
   | Error (error : Agent.agent_error) ->

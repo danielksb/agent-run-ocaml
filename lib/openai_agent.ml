@@ -94,7 +94,7 @@ let parse_response body =
           Agent.ErrorResponse "Unknown error" )
   with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
-module Make (Http : Agent.HTTP_CLIENT) (Tools : Tool_registry.PROVIDER) = struct
+module Make (Http : Http_client.S) (Tools : Tool_registry.PROVIDER) = struct
   type t = {api_key: string; model: string; base_url: string}
 
   let create (config : Agent.config) =

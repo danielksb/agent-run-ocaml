@@ -23,7 +23,7 @@ module TestConfig = struct
   let tool_final_request_path = "data/openai/tool_final_request.json"
 end
 
-module OpenAiMakeAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT =
+module OpenAiMakeAgent (Http : Http_client.S) : Agent.AGENT =
   Agentlib.Openai_agent.Make (Http) (Test_tools_provider)
 
 module T = Agent_test.Make (OpenAiMakeAgent) (TestConfig)

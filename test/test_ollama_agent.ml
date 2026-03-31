@@ -23,7 +23,7 @@ module TestConfig = struct
   let tool_final_request_path = "data/ollama/tool_final_request.json"
 end
 
-module OllamaMakeAgent (Http : Agent.HTTP_CLIENT) : Agent.AGENT =
+module OllamaMakeAgent (Http : Http_client.S) : Agent.AGENT =
   Ollama_agent.Make (Http) (Test_tools_provider)
 
 module T = Agent_test.Make (OllamaMakeAgent) (TestConfig)

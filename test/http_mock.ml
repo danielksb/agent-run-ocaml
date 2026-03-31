@@ -26,13 +26,13 @@ let expect_get ~url ~response_status ~response_body_path =
 
 let post_always_from_file ~response_status ~response_body_path =
   let response_body = read_file response_body_path in
-  let module Client : Agent.HTTP_CLIENT = struct
+  let module Client : Http_client.S = struct
     let get ~url:_ ~headers:_ = Lwt.return (response_status, response_body)
 
     let post ~url:_ ~headers:_ ~body:_ =
       Lwt.return (response_status, response_body)
   end in
-  (module Client : Agent.HTTP_CLIENT)
+  (module Client : Http_client.S)
 
 let pp_method (m : http_method) =
   match m with
@@ -176,9 +176,9 @@ let make expectations =
             "HTTP mock: unexpected request %s %s. Remaining expectations: %s"
             (pp_method actual_method) url rem_urls
   in
-  let module Client : Agent.HTTP_CLIENT = struct
+  let module Client : Http_client.S = struct
     let get ~url ~headers = get_impl ~url ~headers
 
     let post ~url ~headers ~body = post_impl ~url ~headers ~body
   end in
-  ((module Client : Agent.HTTP_CLIENT), assert_all_matched)
+  ((module Client : Http_client.S), assert_all_matched)

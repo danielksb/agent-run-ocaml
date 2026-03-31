@@ -75,10 +75,6 @@ let run_agent_loop tool_registry ~post ~url ~headers fns prompt =
   in
   loop 1 (fns.initial_messages prompt)
 
-module type HTTP_CLIENT = Http_client.S
-
-module RealHttpClient : HTTP_CLIENT = Http_client.Default
-
 module type AGENT = sig
   type t
 

@@ -10,7 +10,7 @@ let agent_result_testable =
    Creates a collection of tests for a specific agent implementation.
 *)
 module Make
-    (AgentMake : functor (Http : Agent.HTTP_CLIENT) -> Agent.AGENT)
+    (AgentMake : functor (Http : Http_client.S) -> Agent.AGENT)
     (TestConfig : Test_config.TEST_CONIFG) =
 struct
   let test_request_success () =
@@ -18,7 +18,7 @@ struct
       Http_mock.post_always_from_file ~response_status:200
         ~response_body_path:TestConfig.response_path
     in
-    let module MockHttpClient = (val mock_client : Agent.HTTP_CLIENT) in
+    let module MockHttpClient = (val mock_client : Http_client.S) in
     let module TestAgent = AgentMake (MockHttpClient) in
     let agent = TestAgent.create TestConfig.agent_config in
     let actual_response =
@@ -41,7 +41,7 @@ struct
       Http_mock.post_always_from_file ~response_status:401
         ~response_body_path:TestConfig.error_path
     in
-    let module MockHttpClientError = (val mock_client : Agent.HTTP_CLIENT) in
+    let module MockHttpClientError = (val mock_client : Http_client.S) in
     let module TestAgentError = AgentMake (MockHttpClientError) in
     let agent = TestAgentError.create TestConfig.agent_config in
     let actual_response =
@@ -64,7 +64,7 @@ struct
           ~response_body_path:TestConfig.tool_final_response_path ]
     in
     let mock_client, assert_all_matched = Http_mock.make interactions in
-    let module MockHttpClient = (val mock_client : Agent.HTTP_CLIENT) in
+    let module MockHttpClient = (val mock_client : Http_client.S) in
     let module TestAgentLoop = AgentMake (MockHttpClient) in
     let agent = TestAgentLoop.create TestConfig.agent_config in
     let result =
