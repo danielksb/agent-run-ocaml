@@ -11,6 +11,9 @@ val expect_post :
   -> response_body_path:string
   -> interaction
 
+val expect_get :
+  url:string -> response_status:int -> response_body_path:string -> interaction
+
 val make : interaction list -> (module Agent.HTTP_CLIENT) * (unit -> unit)
 (**
   Creates a strict mock HTTP client.

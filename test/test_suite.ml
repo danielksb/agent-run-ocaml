@@ -5,6 +5,7 @@ let () =
     ; Test_openai_agent.tests
     ; Test_config_parsing.tests
     ; Test_tool.tests
+    ; Test_fetch_url.tests
     ; Test_tool_registry.tests
     ; Test_exec_program.tests
     ; Test_skill.tests ]

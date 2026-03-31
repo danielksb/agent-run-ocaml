@@ -26,7 +26,7 @@ let test_weather_only_profile_handler_availability () =
   let weather_result =
     match Tool_registry.find_handler registry "get_weather" with
     | Some run ->
-        run weather_args
+        Lwt_main.run (run weather_args)
     | None ->
         Error "missing get_weather handler"
   in

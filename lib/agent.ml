@@ -17,19 +17,23 @@ type parsed_response =
   | ErrorResponse of string
 
 let execute_tool_call (tool_reg : Tool_registry.t) (tc : tool_call) :
-    tool_result =
-  let content =
-    match Tool_registry.find_handler tool_reg tc.name with
-    | Some handler -> (
-      match handler tc.arguments with
+    tool_result Lwt.t =
+  let open Lwt in
+  Logging.verbose
+    (Printf.sprintf "Calling tool \"%s\" with %s" tc.name
+       (Yojson.Safe.to_string tc.arguments) ) ;
+  let wrap_content content = return {name= tc.name; content; id= tc.id} in
+  match Tool_registry.find_handler tool_reg tc.name with
+  | Some handler -> (
+      handler tc.arguments
+      >>= fun result ->
+      match result with
       | Ok r ->
-          r
+          wrap_content r
       | Error e ->
-          "Tool error: " ^ e )
-    | None ->
-        "Unknown tool: " ^ tc.name
-  in
-  {name= tc.name; content; id= tc.id}
+          wrap_content ("Tool error: " ^ e) )
+  | None ->
+      wrap_content ("Unknown tool: " ^ tc.name)
 
 type 'msg agent_loop_fns =
   { initial_messages: string -> 'msg list
@@ -57,49 +61,23 @@ let run_agent_loop tool_registry ~post ~url ~headers fns prompt =
         Logging.verbose
           (Printf.sprintf "step %d model response type: tool_call" step) ;
         let messages = fns.append_assistant messages content tool_calls in
-        List.iter
-          (fun (tc : tool_call) ->
-            Logging.verbose
-              (Printf.sprintf "Calling tool \"%s\" with %s" tc.name
-                 (Yojson.Safe.to_string tc.arguments) ) )
-          tool_calls ;
         let tool_results =
           List.map (execute_tool_call tool_registry) tool_calls
         in
+        Lwt.all tool_results
+        >>= fun results ->
         let messages =
           List.fold_left
             (fun msgs tr -> fns.append_tool_result msgs tr)
-            messages tool_results
+            messages results
         in
         loop (step + 1) messages
   in
   loop 1 (fns.initial_messages prompt)
 
-module type HTTP_CLIENT = sig
-  val post :
-       url:string
-    -> headers:(string * string) list
-    -> body:string
-    -> (int * string) Lwt.t
-end
+module type HTTP_CLIENT = Http_client.S
 
-module RealHttpClient : HTTP_CLIENT = struct
-  open Lwt
-
-  let post ~url ~headers ~body =
-    Logging.debug ("Request body: " ^ body) ;
-    let cohttp_headers = Cohttp.Header.of_list headers in
-    let cohttp_body = Cohttp_lwt.Body.of_string body in
-    Cohttp_lwt_unix.Client.post ~body:cohttp_body ~headers:cohttp_headers
-      (Uri.of_string url)
-    >>= fun (resp, body) ->
-    let code = Cohttp.Response.status resp |> Cohttp.Code.code_of_status in
-    body |> Cohttp_lwt.Body.to_string
-    >|= fun body_str ->
-    Logging.debug ("Response code: " ^ Int.to_string code) ;
-    Logging.debug ("Response body: " ^ body_str) ;
-    (code, body_str)
-end
+module RealHttpClient : HTTP_CLIENT = Http_client.Default
 
 module type AGENT = sig
   type t

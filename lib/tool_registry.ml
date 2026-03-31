@@ -1,4 +1,4 @@
-type handler = Yojson.Safe.t -> (string, string) result
+type handler = Yojson.Safe.t -> (string, string) result Lwt.t
 
 type entry = {tool: Tool.t; run: handler}
 
@@ -15,11 +15,14 @@ let add_entry registry entry = {tools= entry :: registry.tools}
 let add_tool registry ~(tool : Tool.t) ~(run : handler) =
   add_entry registry {tool; run}
 
+let async handler = fun args -> List_files.run args |> Lwt.return
+
 let all_tools : entry list =
-  [ {tool= List_files.definition; run= List_files.run}
-  ; {tool= Read_file.definition; run= Read_file.run}
-  ; {tool= Write_file.definition; run= Write_file.run}
-  ; {tool= Exec_program.definition; run= Exec_program.run} ]
+  [ {tool= List_files.definition; run= async List_files.run}
+  ; {tool= Read_file.definition; run= async Read_file.run}
+  ; {tool= Write_file.definition; run= async Write_file.run}
+  ; {tool= Exec_program.definition; run= async Exec_program.run}
+  ; {tool= Fetch_url.definition; run= Fetch_url.run} ]
 
 let default_registry () = {tools= all_tools}
 

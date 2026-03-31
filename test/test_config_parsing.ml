@@ -16,9 +16,7 @@ let with_temp_dir f =
       Filename.concat base (Printf.sprintf "agent_run_test_home_%d" n)
     in
     if Sys.file_exists path then make_dir (n + 1)
-    else (
-      Unix.mkdir path 0o700 ;
-      path )
+    else (Unix.mkdir path 0o700 ; path)
   in
   let rec rm_tree path =
     if Sys.file_exists path then
@@ -57,20 +55,17 @@ let test_empty_config_uses_defaults () =
       Alcotest.(check string)
         "openai model default kept" "gpt-4o-mini" config.openai.model ;
       Alcotest.(check string)
-        "openai base_url default kept"
-        "https://api.openai.com"
+        "openai base_url default kept" "https://api.openai.com"
         config.openai.base_url ;
       Alcotest.(check string)
         "gemini model default kept" "gemini-flash-latest" config.gemini.model ;
       Alcotest.(check string)
         "gemini base_url default kept"
-        "https://generativelanguage.googleapis.com"
-        config.gemini.base_url ;
+        "https://generativelanguage.googleapis.com" config.gemini.base_url ;
       Alcotest.(check string)
         "ollama model default kept" "functiongemma" config.ollama.model ;
       Alcotest.(check string)
-        "ollama base_url default kept"
-        "http://localhost:11434"
+        "ollama base_url default kept" "http://localhost:11434"
         config.ollama.base_url )
 
 let test_parse_all_vendor_models () =
@@ -93,19 +88,16 @@ let test_parse_all_vendor_models () =
       Alcotest.(check string)
         "openai model parsed" "gpt-4.1-mini" config.openai.model ;
       Alcotest.(check string)
-        "openai base_url parsed" "https://api.openai.com"
-        config.openai.base_url ;
+        "openai base_url parsed" "https://api.openai.com" config.openai.base_url ;
       Alcotest.(check string)
         "gemini model parsed" "gemini-2.5-flash" config.gemini.model ;
       Alcotest.(check string)
-        "gemini base_url parsed"
-        "https://generativelanguage.googleapis.com"
+        "gemini base_url parsed" "https://generativelanguage.googleapis.com"
         config.gemini.base_url ;
       Alcotest.(check string)
         "ollama model parsed" "my-ollama-model" config.ollama.model ;
       Alcotest.(check string)
-        "ollama base_url parsed" "http://127.0.0.1:11434"
-        config.ollama.base_url )
+        "ollama base_url parsed" "http://127.0.0.1:11434" config.ollama.base_url )
 
 let test_partial_config_does_not_change_other_vendor_defaults () =
   let content =
@@ -116,23 +108,18 @@ let test_partial_config_does_not_change_other_vendor_defaults () =
   in
   with_temp_config content (fun path ->
       let config = Config.load (Some path) in
+      Alcotest.(check string) "openai model set" "gpt-4.1" config.openai.model ;
       Alcotest.(check string)
-        "openai model set" "gpt-4.1" config.openai.model ;
+        "openai base_url set" "https://api.openai.com" config.openai.base_url ;
       Alcotest.(check string)
-        "openai base_url set" "https://api.openai.com"
-        config.openai.base_url ;
-      Alcotest.(check string)
-        "gemini model still default"
-        "gemini-flash-latest" config.gemini.model ;
+        "gemini model still default" "gemini-flash-latest" config.gemini.model ;
       Alcotest.(check string)
         "gemini base_url still default"
-        "https://generativelanguage.googleapis.com"
-        config.gemini.base_url ;
+        "https://generativelanguage.googleapis.com" config.gemini.base_url ;
       Alcotest.(check string)
         "ollama model still default" "functiongemma" config.ollama.model ;
       Alcotest.(check string)
-        "ollama base_url still default"
-        "http://localhost:11434"
+        "ollama base_url still default" "http://localhost:11434"
         config.ollama.base_url )
 
 let test_load_none_without_default_file_uses_defaults () =
@@ -144,21 +131,18 @@ let test_load_none_without_default_file_uses_defaults () =
           Alcotest.(check string)
             "openai model default" "gpt-4o-mini" config.openai.model ;
           Alcotest.(check string)
-            "openai base_url default"
-            "https://api.openai.com"
+            "openai base_url default" "https://api.openai.com"
             config.openai.base_url ;
           Alcotest.(check string)
             "gemini model default" "gemini-flash-latest" config.gemini.model ;
           Alcotest.(check string)
             "gemini base_url default"
-            "https://generativelanguage.googleapis.com"
-            config.gemini.base_url ;
+            "https://generativelanguage.googleapis.com" config.gemini.base_url ;
           Alcotest.(check string)
             "ollama model default" "functiongemma" config.ollama.model ;
           Alcotest.(check string)
-            "ollama base_url default"
-            "http://localhost:11434"
-            config.ollama.base_url ))
+            "ollama base_url default" "http://localhost:11434"
+            config.ollama.base_url ) )
 
 let test_load_none_reads_default_file_from_home () =
   with_temp_dir (fun dir ->
@@ -184,29 +168,34 @@ let test_load_none_reads_default_file_from_home () =
           Out_channel.output_string out content ;
           close_out out ;
           let config = Config.load None in
-          Alcotest.(check string) "openai model loaded" "test-openai"
-            config.openai.model ;
-          Alcotest.(check string) "openai base_url loaded"
-            "https://openai.example" config.openai.base_url ;
-          Alcotest.(check string) "gemini model loaded" "test-gemini"
-            config.gemini.model ;
-          Alcotest.(check string) "gemini base_url loaded"
-            "https://gemini.example" config.gemini.base_url ;
-          Alcotest.(check string) "ollama model loaded" "test-ollama"
-            config.ollama.model ;
-          Alcotest.(check string) "ollama base_url loaded"
-            "http://ollama.example:11434" config.ollama.base_url ))
+          Alcotest.(check string)
+            "openai model loaded" "test-openai" config.openai.model ;
+          Alcotest.(check string)
+            "openai base_url loaded" "https://openai.example"
+            config.openai.base_url ;
+          Alcotest.(check string)
+            "gemini model loaded" "test-gemini" config.gemini.model ;
+          Alcotest.(check string)
+            "gemini base_url loaded" "https://gemini.example"
+            config.gemini.base_url ;
+          Alcotest.(check string)
+            "ollama model loaded" "test-ollama" config.ollama.model ;
+          Alcotest.(check string)
+            "ollama base_url loaded" "http://ollama.example:11434"
+            config.ollama.base_url ) )
 
 let test_invalid_toml_raises () =
   let content = "[openai\nmodel = \"x\"" in
   with_temp_config content (fun path ->
       expect_raises "invalid toml should raise" (fun () ->
-          Config.load (Some path) ))
+          Config.load (Some path) ) )
 
 let test_missing_explicit_path_raises () =
-  let path = Filename.concat (Filename.get_temp_dir_name ()) "does_not_exist.toml" in
+  let path =
+    Filename.concat (Filename.get_temp_dir_name ()) "does_not_exist.toml"
+  in
   expect_raises "missing explicit path should raise" (fun () ->
-      Config.load (Some path))
+      Config.load (Some path) )
 
 let tests =
   ( "config_parsing"

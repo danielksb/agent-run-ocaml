@@ -26,6 +26,6 @@ let definition : Tool.t =
 let run (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
-      e
+      Lwt.return e
   | Ok _ ->
-      Ok "Test weather: 22\194\176C."
+      Lwt.return (Ok "Test weather: 22\194\176C.")

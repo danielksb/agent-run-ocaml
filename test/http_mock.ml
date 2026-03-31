@@ -20,9 +20,15 @@ let expect_post ~url ~request_body_path ~response_status ~response_body_path =
   let response_body = read_file response_body_path in
   {method_= `POST; url; request_body; response_status; response_body}
 
+let expect_get ~url ~response_status ~response_body_path =
+  let response_body = read_file response_body_path in
+  {method_= `GET; url; request_body= None; response_status; response_body}
+
 let post_always_from_file ~response_status ~response_body_path =
   let response_body = read_file response_body_path in
   let module Client : Agent.HTTP_CLIENT = struct
+    let get ~url:_ ~headers:_ = Lwt.return (response_status, response_body)
+
     let post ~url:_ ~headers:_ ~body:_ =
       Lwt.return (response_status, response_body)
   end in
@@ -135,7 +141,44 @@ let make expectations =
             "HTTP mock: unexpected request %s %s. Remaining expectations: %s"
             (pp_method actual_method) url rem_urls
   in
+  let get_impl ~url ~headers:_ =
+    let actual_method = `GET in
+    let match_index =
+      List.find_opt
+        (fun e -> e.url = url && e.method_ = actual_method)
+        state.remaining
+    in
+    match match_index with
+    | Some e ->
+        state.remaining <- remove_first e state.remaining ;
+        Lwt.return (e.response_status, e.response_body)
+    | None ->
+        let url_only = List.filter (fun e -> e.url = url) state.remaining in
+        if url_only <> [] then
+          let expected_methods =
+            url_only
+            |> List.map (fun e -> pp_method e.method_)
+            |> List.sort_uniq String.compare
+            |> String.concat ", "
+          in
+          failf
+            "HTTP mock: method mismatch for URL %s. Expected method(s): %s, \
+             actual: %s"
+            url expected_methods (pp_method actual_method)
+        else
+          let rem_urls =
+            state.remaining
+            |> List.map (fun e ->
+                Printf.sprintf "%s (%s)" e.url (pp_method e.method_) )
+            |> String.concat ", "
+          in
+          failf
+            "HTTP mock: unexpected request %s %s. Remaining expectations: %s"
+            (pp_method actual_method) url rem_urls
+  in
   let module Client : Agent.HTTP_CLIENT = struct
+    let get ~url ~headers = get_impl ~url ~headers
+
     let post ~url ~headers ~body = post_impl ~url ~headers ~body
   end in
   ((module Client : Agent.HTTP_CLIENT), assert_all_matched)

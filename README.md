@@ -14,6 +14,7 @@ Future versions might publish the library component in order to use it in other 
 - `exec_program`: executes a program via `Unix.execvpe` and returns:
   - `status code: <n>`
   - combined stdout/stderr output
+- `fetch_url`: performs an HTTP(S) GET request and returns the response body as text
 
 `exec_program` can run any executable available in `PATH`. This is powerful but high-risk; only use it in trusted environments.
 
