@@ -15,7 +15,7 @@ let add_entry registry entry = {tools= entry :: registry.tools}
 let add_tool registry ~(tool : Tool.t) ~(run : handler) =
   add_entry registry {tool; run}
 
-let async handler = fun args -> List_files.run args |> Lwt.return
+let async handler = fun args -> handler args |> Lwt.return
 
 let all_tools : entry list =
   [ {tool= List_files.definition; run= async List_files.run}

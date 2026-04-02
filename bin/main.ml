@@ -81,9 +81,12 @@ module ProdTools = struct
 end
 
 module DefaultHttpClient = Http_client.Default
-module OpenAiAgent = Openai_agent.Make (DefaultHttpClient) (ProdTools)
-module OllamaAgent = Ollama_agent.Make (DefaultHttpClient) (ProdTools)
-module GeminiAgent = Gemini_agent.Make (DefaultHttpClient) (ProdTools)
+module OpenAiAgent =
+  Agent.Make (Openai_agent.Vendor) (DefaultHttpClient) (ProdTools)
+module OllamaAgent =
+  Agent.Make (Ollama_agent.Vendor) (DefaultHttpClient) (ProdTools)
+module GeminiAgent =
+  Agent.Make (Gemini_agent.Vendor) (DefaultHttpClient) (ProdTools)
 
 let handle_result = function
   | Error (error : Agent.agent_error) ->
@@ -95,7 +98,7 @@ let handle_result = function
 let run_agent (type a) (module A : Agent.AGENT with type t = a)
     (agent_result : (a, Agent.agent_error) result) prompt =
   Result.bind agent_result (fun agent ->
-      A.agent_loop agent prompt |> Lwt_main.run )
+      A.send_request agent prompt |> Lwt_main.run )
   |> handle_result
 
 let run vendor app_config prompt params =

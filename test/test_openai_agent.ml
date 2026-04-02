@@ -24,7 +24,8 @@ module TestConfig = struct
 end
 
 module OpenAiMakeAgent (Http : Http_client.S) : Agent.AGENT =
-  Agentlib.Openai_agent.Make (Http) (Test_tools_provider)
+  Agentlib.Agent.Make (Agentlib.Openai_agent.Vendor) (Http)
+    (Test_tools_provider)
 
 module T = Agent_test.Make (OpenAiMakeAgent) (TestConfig)
 

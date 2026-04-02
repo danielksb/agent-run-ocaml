@@ -68,7 +68,7 @@ struct
     let module TestAgentLoop = AgentMake (MockHttpClient) in
     let agent = TestAgentLoop.create TestConfig.agent_config in
     let result =
-      TestAgentLoop.agent_loop agent
+      TestAgentLoop.send_request agent
         "What is the current temperature in Berlin in Celsius?"
       |> Lwt_main.run
     in

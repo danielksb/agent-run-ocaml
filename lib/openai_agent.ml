@@ -31,115 +31,97 @@ let item_to_json_list = function
           ; ("call_id", `String call_id)
           ; ("output", `String output) ] ]
 
-let build_request model messages tools =
-  let input_items = List.concat_map item_to_json_list messages in
-  let tools_json = List.map tool_to_yojson tools in
-  `Assoc
-    [ ("model", `String model)
-    ; ("input", `List input_items)
-    ; ("tools", `List tools_json) ]
+module Vendor : Agent.VENDOR = struct
+  type msg = openai_input_item
 
-let parse_response body =
-  try
-    let json = Yojson.Safe.from_string body in
-    let open Yojson.Safe.Util in
-    match member "error" json with
-    | `Null -> (
-        let output = member "output" json |> to_list in
-        let function_calls =
-          List.filter_map
-            (fun item ->
-              match member "type" item with
-              | `String "function_call" ->
-                  let call_id = member "call_id" item |> to_string in
-                  let name = member "name" item |> to_string in
-                  let args_str = member "arguments" item |> to_string in
-                  let arguments = Yojson.Safe.from_string args_str in
-                  Some Agent.{name; arguments; id= Some call_id}
-              | _ ->
-                  None )
-            output
-        in
-        if function_calls <> [] then
-          Agent.ToolCallResponse {content= ""; tool_calls= function_calls}
-        else
-          let text =
-            List.find_map
+  let user_message p = UserMessage p
+
+  let request_headers (config : Agent.config) =
+    [ ("Content-Type", "application/json")
+    ; ("Authorization", "Bearer " ^ config.api_key) ]
+
+  let request_url (config : Agent.config) = config.base_url ^ "/v1/responses"
+
+  let request_body (config : Agent.config) tools messages =
+    let build_request model messages tools =
+      let input_items = List.concat_map item_to_json_list messages in
+      let tools_json = List.map tool_to_yojson tools in
+      `Assoc
+        [ ("model", `String model)
+        ; ("input", `List input_items)
+        ; ("tools", `List tools_json) ]
+    in
+    build_request config.model_name messages tools |> Yojson.Safe.to_string
+
+  let parse_response body =
+    try
+      let json = Yojson.Safe.from_string body in
+      let open Yojson.Safe.Util in
+      match member "error" json with
+      | `Null -> (
+          let output = member "output" json |> to_list in
+          let function_calls =
+            List.filter_map
               (fun item ->
                 match member "type" item with
-                | `String "message" ->
-                    let content_parts = member "content" item |> to_list in
-                    List.find_map
-                      (fun part ->
-                        match member "type" part with
-                        | `String "output_text" ->
-                            Some (member "text" part |> to_string)
-                        | _ ->
-                            None )
-                      content_parts
+                | `String "function_call" ->
+                    let call_id = member "call_id" item |> to_string in
+                    let name = member "name" item |> to_string in
+                    let args_str = member "arguments" item |> to_string in
+                    let arguments = Yojson.Safe.from_string args_str in
+                    Some Agent.{name; arguments; id= Some call_id}
                 | _ ->
                     None )
               output
           in
-          match text with
-          | Some t ->
-              Agent.TextResponse t
-          | None ->
-              Agent.ErrorResponse "No output text found" )
-    | error_json -> (
-      match member "message" error_json with
-      | `String msg ->
-          Agent.ErrorResponse msg
-      | _ ->
-          Agent.ErrorResponse "Unknown error" )
-  with exn -> Agent.ErrorResponse (Printexc.to_string exn)
-
-module Make (Http : Http_client.S) (Tools : Tool_registry.PROVIDER) = struct
-  type t = {api_key: string; model: string; base_url: string}
-
-  let create (config : Agent.config) =
-    { api_key= config.api_key
-    ; model= config.model_name
-    ; base_url= config.base_url }
-
-  let with_model agent model = {agent with model}
-
-  let agent_loop agent prompt =
-    let registry = Tools.registry in
-    let tools = Tool_registry.tools registry in
-    let headers =
-      [ ("Content-Type", "application/json")
-      ; ("Authorization", "Bearer " ^ agent.api_key) ]
-    in
-    let url = agent.base_url ^ "/v1/responses" in
-    let fns : openai_input_item Agent.agent_loop_fns =
-      { initial_messages= (fun p -> [UserMessage p])
-      ; build_request_body=
-          (fun messages ->
-            build_request agent.model messages tools |> Yojson.Safe.to_string )
-      ; parse_response
-      ; append_assistant=
-          (fun messages _content tool_calls ->
-            let fc_items =
-              List.map
-                (fun (tc : Agent.tool_call) ->
-                  `Assoc
-                    [ ("type", `String "function_call")
-                    ; ("call_id", `String (Option.value tc.id ~default:""))
-                    ; ("name", `String tc.name)
-                    ; ("arguments", `String (Yojson.Safe.to_string tc.arguments))
-                    ] )
-                tool_calls
+          if function_calls <> [] then
+            Agent.ToolCallResponse {content= ""; tool_calls= function_calls}
+          else
+            let text =
+              List.find_map
+                (fun item ->
+                  match member "type" item with
+                  | `String "message" ->
+                      let content_parts = member "content" item |> to_list in
+                      List.find_map
+                        (fun part ->
+                          match member "type" part with
+                          | `String "output_text" ->
+                              Some (member "text" part |> to_string)
+                          | _ ->
+                              None )
+                        content_parts
+                  | _ ->
+                      None )
+                output
             in
-            messages @ [RawOutputItems fc_items] )
-      ; append_tool_result=
-          (fun messages (tr : Agent.tool_result) ->
-            messages
-            @ [ ToolOutput
-                  {call_id= Option.value tr.id ~default:""; output= tr.content}
-              ] ) }
-    in
-    Agent.run_agent_loop registry ~post:Http.post ~url ~headers fns prompt
+            match text with
+            | Some t ->
+                Agent.TextResponse t
+            | None ->
+                Agent.ErrorResponse "No output text found" )
+      | error_json -> (
+        match member "message" error_json with
+        | `String msg ->
+            Agent.ErrorResponse msg
+        | _ ->
+            Agent.ErrorResponse "Unknown error" )
+    with exn -> Agent.ErrorResponse (Printexc.to_string exn)
 
-  let send_request = agent_loop
+  let assistant_message =
+   fun _content tool_calls ->
+    let fc_items =
+      List.map
+        (fun (tc : Agent.tool_call) ->
+          `Assoc
+            [ ("type", `String "function_call")
+            ; ("call_id", `String (Option.value tc.id ~default:""))
+            ; ("name", `String tc.name)
+            ; ("arguments", `String (Yojson.Safe.to_string tc.arguments)) ] )
+        tool_calls
+    in
+    RawOutputItems fc_items
+
+  let tool_message (tr : Agent.tool_result) =
+    ToolOutput {call_id= Option.value tr.id ~default:""; output= tr.content}
 end

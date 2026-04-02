@@ -68,60 +68,63 @@ let build_request model messages tools =
     ; ("stream", `Bool false)
     ; ("tools", `List tools_json) ]
 
-let parse_response body =
-  try
-    let json = Yojson.Safe.from_string body in
-    let open Yojson.Safe.Util in
-    match member "error" json with
-    | `String msg ->
-        Agent.ErrorResponse msg
-    | `Null -> (
-      match response_of_yojson json with
-      | Error e ->
-          Agent.ErrorResponse ("Json parsing error: " ^ e)
-      | Ok resp ->
-          let calls =
-            List.map
-              (fun (tc : tool_call) ->
-                Agent.
-                  { name= tc.function_.name
-                  ; arguments= tc.function_.arguments
-                  ; id= None } )
-              resp.message.tool_calls
-          in
-          if calls = [] then Agent.TextResponse resp.message.content
-          else
-            Agent.ToolCallResponse
-              {content= resp.message.content; tool_calls= calls} )
-    | _ ->
-        Agent.ErrorResponse "Unknown error format"
-  with exn -> Agent.ErrorResponse (Printexc.to_string exn)
+module Vendor : Agent.VENDOR = struct
+  type msg = ollama_message
 
-module Make (Http : Http_client.S) (Tools : Tool_registry.PROVIDER) = struct
-  type t = {base_url: string; model: string}
+  let user_message p = User p
 
-  let create (config : Agent.config) =
-    {base_url= config.base_url; model= config.model_name}
-
-  let with_url agent url = {agent with base_url= url}
-
-  let agent_loop agent prompt =
-    let registry = Tools.registry in
-    let tools = Tool_registry.tools registry in
-    let headers = [("Content-Type", "application/json")] in
-    let url = agent.base_url ^ "/api/chat" in
-    let fns : ollama_message Agent.agent_loop_fns =
-      { initial_messages= (fun p -> [User p])
-      ; build_request_body=
-          (fun messages ->
-            build_request agent.model messages tools |> Yojson.Safe.to_string )
-      ; parse_response
-      ; append_assistant=
-          (fun messages content tool_calls ->
-            messages @ [Assistant {content; tool_calls}] )
-      ; append_tool_result= (fun messages tr -> messages @ [ToolResult tr]) }
+  let request_headers (config : Agent.config) =
+    let auth_token =
+      if String.length config.api_key > 0 then
+        [("Authentication", "Bearer: " ^ config.api_key)]
+      else []
     in
-    Agent.run_agent_loop registry ~post:Http.post ~url ~headers fns prompt
+    List.append [("Content-Type", "application/json")] auth_token
 
-  let send_request = agent_loop
+  let request_url (config : Agent.config) = config.base_url ^ "/api/chat"
+
+  let request_body (config : Agent.config) tools messages =
+    let build_request model messages tools =
+      let msgs_json = List.map message_to_yojson messages in
+      let tools_json = List.map tool_to_yojson tools in
+      `Assoc
+        [ ("model", `String model)
+        ; ("messages", `List msgs_json)
+        ; ("stream", `Bool false)
+        ; ("tools", `List tools_json) ]
+    in
+    build_request config.model_name messages tools |> Yojson.Safe.to_string
+
+  let parse_response body =
+    try
+      let json = Yojson.Safe.from_string body in
+      let open Yojson.Safe.Util in
+      match member "error" json with
+      | `String msg ->
+          Agent.ErrorResponse msg
+      | `Null -> (
+        match response_of_yojson json with
+        | Error e ->
+            Agent.ErrorResponse ("Json parsing error: " ^ e)
+        | Ok resp ->
+            let calls =
+              List.map
+                (fun (tc : tool_call) ->
+                  Agent.
+                    { name= tc.function_.name
+                    ; arguments= tc.function_.arguments
+                    ; id= None } )
+                resp.message.tool_calls
+            in
+            if calls = [] then Agent.TextResponse resp.message.content
+            else
+              Agent.ToolCallResponse
+                {content= resp.message.content; tool_calls= calls} )
+      | _ ->
+          Agent.ErrorResponse "Unknown error format"
+    with exn -> Agent.ErrorResponse (Printexc.to_string exn)
+
+  let assistant_message content tool_calls = Assistant {content; tool_calls}
+
+  let tool_message tool_result = ToolResult tool_result
 end

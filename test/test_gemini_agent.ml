@@ -25,7 +25,8 @@ module TestConfig = struct
 end
 
 module GeminiMakeAgent (Http : Http_client.S) : Agent.AGENT =
-  Agentlib.Gemini_agent.Make (Http) (Test_tools_provider)
+  Agentlib.Agent.Make (Agentlib.Gemini_agent.Vendor) (Http)
+    (Test_tools_provider)
 
 module T = Agent_test.Make (GeminiMakeAgent) (TestConfig)
 
