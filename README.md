@@ -86,3 +86,9 @@ ollama run functiongemma
 ```shell
 dune exec -- agent-run --vendor ollama --model functiongemma --prompt "List all files in the directory 'test'."
 ```
+
+## Running with Skills
+
+```shell
+dune exec -- agent-run --vendor openai --skill .\playwright-cli.skill.md --verbose --prompt "go to duckduckgo.com, search for '!wiki Ocaml' and return a summary of the result"
+```

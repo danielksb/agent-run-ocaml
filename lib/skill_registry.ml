@@ -18,16 +18,16 @@ let frontmatter_block (skill : Skill.t) =
   String.concat "\n"
     [ "name: " ^ skill.frontmatter.name
     ; "description: " ^ skill.frontmatter.description
-    ; "path: " ^ skill.path ]
+    ; "location: " ^ skill.path ]
 
 let build_instruction skills =
   String.concat "\n"
-    [ "Skills are available for this request."
-    ; "Use skill frontmatter to decide whether a skill is relevant."
-    ; "When details are needed, call read_file with the exact skill path."
+    [ {|The following skills provide specialized instructions for specific tasks.
+        When a task matches a skill's description, use your read_file tool to load
+        the file at the listed location before proceeding.|}
     ; ""
-    ; "Available skill frontmatter:"
-    ; skills |> List.map frontmatter_block |> String.concat "\n"
+    ; "Available skills:"
+    ; skills |> List.map frontmatter_block |> String.concat "\n\n"
     ; "\n" ]
 
 let skills_to_instruction registry =
