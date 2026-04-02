@@ -150,29 +150,6 @@ let run_with_params params prompt =
   else if params.verbose then Logging.set_level Logging.Verbose
   else Logging.set_level Logging.Normal ;
   let config = Config.load params.config_path in
-  let prompt =
-    match List.rev params.skill_paths with
-    | [] ->
-        prompt
-    | skill_paths ->
-        let parsed_skills =
-          List.map
-            (fun skill_path ->
-              let absolute_path =
-                if Filename.is_relative skill_path then
-                  Filename.concat (Sys.getcwd ()) skill_path
-                else skill_path
-              in
-              match Skill.from_file absolute_path with
-              | Ok skill ->
-                  skill
-              | Error msg ->
-                  Printf.eprintf "ERROR: %s\n" msg ;
-                  exit 1 )
-            skill_paths
-        in
-        Skill.augment_prompt_many ~original_prompt:prompt ~skills:parsed_skills
-  in
   match parse_vendor params.vendor_name with
   | Some vendor ->
       run vendor config prompt params

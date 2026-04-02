@@ -1,14 +1,7 @@
-type t =
-  { name: string option
-  ; description: string option
-  ; license: string option
-  ; compatibility: string option
-  ; metadata: (string * string) list
-  ; allowed_tools: string option
-  ; skill_path: string }
+type frontmatter = {name: string; description: string} [@@deriving show, eq]
 
-val from_file : string -> (t, string) result
+val frontmatter_from_string : string -> (frontmatter, string) result
+(** loads and validates frontmatter from markdown *)
 
-val augment_prompt : original_prompt:string -> skill:t -> string
-
-val augment_prompt_many : original_prompt:string -> skills:t list -> string
+val frontmatters_to_instruction : frontmatter list -> string
+(** provides a short instruction to the LLM for using skills *)
