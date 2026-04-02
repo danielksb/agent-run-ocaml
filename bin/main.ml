@@ -77,7 +77,7 @@ let parse_vendor str =
       None
 
 module ProdTools = struct
-  let registry = Tool_registry.default_registry ()
+  let registry = Tool_registry.default_registry
 end
 
 module DefaultHttpClient = Http_client.Default
