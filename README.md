@@ -11,12 +11,12 @@ Future versions might publish the library component in order to use it in other 
 - `list_files`
 - `read_file`
 - `write_file`
-- `exec_program`: executes a program via `Unix.execvpe` and returns:
+- `exec_command`: executes a shell command and returns:
   - `status code: <n>`
   - combined stdout/stderr output
 - `fetch_url`: performs an HTTP(S) GET request and returns the response body as text
 
-`exec_program` can run any executable available in `PATH`. This is powerful but high-risk; only use it in trusted environments.
+`exec_command` runs via `sh -c` on Linux/macOS and PowerShell `Invoke-Expression` on Windows. This is powerful but high-risk; only use it in trusted environments.
 
 ## How To Run
 
@@ -90,5 +90,5 @@ dune exec -- agent-run --vendor ollama --model functiongemma --prompt "List all 
 ## Running with Skills
 
 ```shell
-dune exec -- agent-run --vendor openai --skill .\playwright-cli.skill.md --verbose --prompt "go to duckduckgo.com, search for '!wiki Ocaml' and return a summary of the result"
+dune exec -- agent-run --vendor openai --skill .\skills\playwright-cli.md --verbose --prompt "go to https://demo.playwright.dev/todomvc/, enter the TODO 'Learn Ocaml' and make a snapshot"
 ```

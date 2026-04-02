@@ -16,7 +16,7 @@ let default_registry : t =
     [ {tool= List_files.definition; run= async List_files.run}
     ; {tool= Read_file.definition; run= async Read_file.run}
     ; {tool= Write_file.definition; run= async Write_file.run}
-    ; {tool= Exec_program.definition; run= async Exec_program.run}
+    ; {tool= Exec_command.definition; run= async Exec_command.run}
     ; {tool= Fetch_url.definition; run= Fetch_url.run} ]
   in
   {tools= all_tools}

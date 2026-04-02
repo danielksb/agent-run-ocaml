@@ -82,15 +82,15 @@ struct
       match Vendor.parse_response body_str with
       | ErrorResponse msg ->
           Logging.verbose
-            (Printf.sprintf "step %d model response type: error" step) ;
+            (Printf.sprintf "step %d model response error: %s" step msg) ;
           Lwt.return (Error {message= msg})
       | TextResponse text ->
           Logging.verbose
-            (Printf.sprintf "step %d model response type: final_text" step) ;
+            (Printf.sprintf "step %d model response final_text: %s" step text) ;
           Lwt.return (Ok {response= text})
       | ToolCallResponse {content; tool_calls} ->
           Logging.verbose
-            (Printf.sprintf "step %d model response type: tool_call" step) ;
+            (Printf.sprintf "step %d model response tool_call" step) ;
           let assistant_msg = Vendor.assistant_message content tool_calls in
           let messages = messages @ [assistant_msg] in
           let tool_results = List.map (execute_tool_call registry) tool_calls in

@@ -1,36 +1,24 @@
 let definition : Tool.t =
   { type_= "function"
-  ; name= "exec_program"
+  ; name= "exec_command"
   ; description=
-      "Execute a program with optional CLI arguments and return status code \
-       plus combined stdout/stderr output."
+      "Execute a shell command and return status code plus combined \
+       stdout/stderr output."
   ; parameters=
       { type_= "object"
       ; properties=
           Tool.StringMap.empty
-          |> Tool.StringMap.add "program"
+          |> Tool.StringMap.add "command"
                Tool.
                  { type_= "string"
-                 ; description= Some "Executable name or path."
+                 ; description= Some "Shell command string to execute."
                  ; enum= None
                  ; items= None }
-          |> Tool.StringMap.add "args"
-               Tool.
-                 { type_= "array"
-                 ; description= Some "Command-line arguments as list of strings"
-                 ; enum= None
-                 ; items=
-                     Some
-                       Tool.
-                         { type_= "string"
-                         ; description= None
-                         ; enum= None
-                         ; items= None } }
-      ; required= ["program"; "args"] }
+      ; required= ["command"] }
   ; strict= true }
 
 let prefixed_error message =
-  Error ("Cannot call tool 'exec_program': " ^ message)
+  Error ("Cannot call tool 'exec_command': " ^ message)
 
 let read_all_fd fd =
   let buf = Buffer.create 4096 in
@@ -92,45 +80,32 @@ let execute_posix ~program ~argv ~envp =
       let status_code = status_to_code status in
       Ok (Printf.sprintf "status code: %d\n%s" status_code output)
 
-let execute ~program ~args =
-  let argv = Array.of_list (program :: args) in
-  let envp = Unix.environment () in
+let execute command =
+  let program, argv, envp =
+    if Sys.win32 then
+      ( "powershell.exe"
+      , [| "powershell.exe"
+         ; "-NoProfile"
+         ; "-Command"
+         ; "Invoke-Expression $env:AGENT_RUN_EXEC_COMMAND" |]
+      , Array.append
+          (Unix.environment ())
+          [| "AGENT_RUN_EXEC_COMMAND=" ^ command |] )
+    else ("sh", [|"sh"; "-c"; command|], Unix.environment ())
+  in
   try
     if Sys.win32 then execute_windows ~program ~argv ~envp
     else execute_posix ~program ~argv ~envp
   with Unix.Unix_error (err, fn, arg) ->
     prefixed_error (Printf.sprintf "%s (%s %s)" (Unix.error_message err) fn arg)
 
-let parse_program args =
-  try Ok (Yojson.Safe.Util.member "program" args |> Yojson.Safe.Util.to_string)
+let parse_command args =
+  try Ok (Yojson.Safe.Util.member "command" args |> Yojson.Safe.Util.to_string)
   with Yojson.Safe.Util.Type_error (msg, _) -> prefixed_error msg
-
-let parse_args args =
-  let open Yojson.Safe in
-  let open Yojson.Safe.Util in
-  match member "args" args with
-  | `Null ->
-      Ok []
-  | `List values ->
-      let rec parse_all acc = function
-        | [] ->
-            Ok (List.rev acc)
-        | v :: tl -> (
-          match v with
-          | `String s ->
-              parse_all (s :: acc) tl
-          | _ ->
-              prefixed_error "argument 'args' must be an array of strings" )
-      in
-      parse_all [] values
-  | _ ->
-      prefixed_error "argument 'args' must be an array of strings"
 
 let run (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
   | Ok args ->
-      Result.bind (parse_program args) (fun program ->
-          Result.bind (parse_args args) (fun parsed_args ->
-              execute ~program ~args:parsed_args ) )
+      Result.bind (parse_command args) execute
