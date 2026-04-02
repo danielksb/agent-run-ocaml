@@ -1,5 +1,7 @@
 type frontmatter = {name: string; description: string} [@@deriving show, eq]
 
+type t = {frontmatter: frontmatter; path: string} [@@deriving show, eq]
+
 type frontmatter_parser_state = {name: string option; description: string option}
 
 let validate_required_frontmatter frontmatter : (frontmatter, string) result =
@@ -49,8 +51,11 @@ let frontmatter_from_string content =
       Error
         "Invalid SKILL.md: file must start with frontmatter delimiter '---'."
 
-let frontmatter_block (skill : frontmatter) =
-  String.concat "\n" ["name: " ^ skill.name; "description: " ^ skill.description]
+let frontmatter_block (skill : t) =
+  String.concat "\n"
+    [ "name: " ^ skill.frontmatter.name
+    ; "description: " ^ skill.frontmatter.description
+    ; "path: " ^ skill.path ]
 
 let build_instruction skills =
   String.concat "\n"
@@ -62,5 +67,15 @@ let build_instruction skills =
     ; skills |> List.map frontmatter_block |> String.concat "\n"
     ; "\n" ]
 
-let frontmatters_to_instruction frontmatters =
-  if List.is_empty frontmatters then "" else build_instruction frontmatters
+let skills_to_instruction skills =
+  if List.is_empty skills then "" else build_instruction skills
+
+let load_from_file path =
+  try
+    let content = In_channel.with_open_bin path In_channel.input_all in
+    match frontmatter_from_string content with
+    | Error err ->
+        Error err
+    | Ok frontmatter ->
+        Ok {frontmatter; path}
+  with Sys_error msg -> Error ("Cannot read skill file: " ^ msg)
