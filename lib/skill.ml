@@ -51,25 +51,6 @@ let frontmatter_from_string content =
       Error
         "Invalid SKILL.md: file must start with frontmatter delimiter '---'."
 
-let frontmatter_block (skill : t) =
-  String.concat "\n"
-    [ "name: " ^ skill.frontmatter.name
-    ; "description: " ^ skill.frontmatter.description
-    ; "path: " ^ skill.path ]
-
-let build_instruction skills =
-  String.concat "\n"
-    [ "Skills are available for this request."
-    ; "Use skill frontmatter to decide whether a skill is relevant."
-    ; "When details are needed, call read_file with the exact skill path."
-    ; ""
-    ; "Available skill frontmatter:"
-    ; skills |> List.map frontmatter_block |> String.concat "\n"
-    ; "\n" ]
-
-let skills_to_instruction skills =
-  if List.is_empty skills then "" else build_instruction skills
-
 let load_from_file path =
   try
     let content = In_channel.with_open_bin path In_channel.input_all in

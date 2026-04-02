@@ -145,11 +145,32 @@ let run vendor app_config prompt params =
       in
       run_agent (module OllamaAgent) agent_result prompt
 
+let resolve_skill_path skill_path =
+  if Filename.is_relative skill_path then
+    Filename.concat (Sys.getcwd ()) skill_path
+  else skill_path
+
+let load_skill_registry skill_paths =
+  List.fold_left
+    (fun registry skill_path ->
+      let absolute_path = resolve_skill_path skill_path in
+      match Skill.load_from_file absolute_path with
+      | Ok _ ->
+          Skill_registry.register_skill registry absolute_path
+      | Error msg ->
+          Printf.eprintf "ERROR: %s\n" msg ;
+          exit 1 )
+    (Skill_registry.empty ()) skill_paths
+
 let run_with_params params prompt =
   if params.debug then Logging.set_level Logging.Debug
   else if params.verbose then Logging.set_level Logging.Verbose
   else Logging.set_level Logging.Normal ;
   let config = Config.load params.config_path in
+  let prompt =
+    params.skill_paths |> List.rev |> load_skill_registry
+    |> Skill_registry.augment_prompt ~original_prompt:prompt
+  in
   match parse_vendor params.vendor_name with
   | Some vendor ->
       run vendor config prompt params

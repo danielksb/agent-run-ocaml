@@ -8,4 +8,5 @@ let () =
     ; Test_fetch_url.tests
     ; Test_tool_registry.tests
     ; Test_exec_program.tests
-    ; Test_skill.tests ]
+    ; Test_skill.tests
+    ; Test_skill_registry.tests ]
