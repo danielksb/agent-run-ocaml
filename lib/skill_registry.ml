@@ -7,9 +7,11 @@ let empty () = {skills= StringMap.empty}
 let register_skill registry path =
   match Skill.load_from_file path with
   | Ok skill ->
-      let key = skill.frontmatter.name in
-      {skills= StringMap.add key skill registry.skills}
-  | Error _ ->
+      let name = skill.frontmatter.name in
+      Logging.verbose (Printf.sprintf "loaded skill \"%s\"" name) ;
+      {skills= StringMap.add name skill registry.skills}
+  | Error err ->
+      Printf.eprintf "ERROR: cannot load skill %s\n" err ;
       registry
 
 let frontmatter_block (skill : Skill.t) =
