@@ -1,5 +1,5 @@
 {
-    "model": "functiongemma",
+    "model": "gemma4:e2b",
     "created_at": "2026-03-25T08:38:57.6654008Z",
     "message": {
         "role": "assistant",

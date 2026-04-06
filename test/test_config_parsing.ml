@@ -63,7 +63,7 @@ let test_empty_config_uses_defaults () =
         "gemini base_url default kept"
         "https://generativelanguage.googleapis.com" config.gemini.base_url ;
       Alcotest.(check string)
-        "ollama model default kept" "functiongemma" config.ollama.model ;
+        "ollama model default kept" "gemma4:e2b" config.ollama.model ;
       Alcotest.(check string)
         "ollama base_url default kept" "http://localhost:11434"
         config.ollama.base_url )
@@ -117,7 +117,7 @@ let test_partial_config_does_not_change_other_vendor_defaults () =
         "gemini base_url still default"
         "https://generativelanguage.googleapis.com" config.gemini.base_url ;
       Alcotest.(check string)
-        "ollama model still default" "functiongemma" config.ollama.model ;
+        "ollama model still default" "gemma4:e2b" config.ollama.model ;
       Alcotest.(check string)
         "ollama base_url still default" "http://localhost:11434"
         config.ollama.base_url )
@@ -139,7 +139,7 @@ let test_load_none_without_default_file_uses_defaults () =
             "gemini base_url default"
             "https://generativelanguage.googleapis.com" config.gemini.base_url ;
           Alcotest.(check string)
-            "ollama model default" "functiongemma" config.ollama.model ;
+            "ollama model default" "gemma4:e2b" config.ollama.model ;
           Alcotest.(check string)
             "ollama base_url default" "http://localhost:11434"
             config.ollama.base_url ) )

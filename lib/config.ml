@@ -7,7 +7,7 @@ let default =
   ; gemini=
       { model= "gemini-flash-latest"
       ; base_url= "https://generativelanguage.googleapis.com" }
-  ; ollama= {model= "functiongemma"; base_url= "http://localhost:11434"} }
+  ; ollama= {model= "gemma4:e2b"; base_url= "http://localhost:11434"} }
 
 let home_dir () =
   match Sys.getenv_opt "HOME" with

@@ -64,13 +64,13 @@ base_url = "https://generativelanguage.googleapis.com"
 
 [ollama]
 base_url = "http://localhost:11434"
-model = "functiongemma"
+model = "gemma4:e2b"
 ```
 
 Model precedence is:
 1. `--model` / `-m`
 2. vendor `model` from config
-3. built-in defaults (`gpt-4o-mini`, `gemini-flash-latest`, `functiongemma`)
+3. built-in defaults (`gpt-4o-mini`, `gemini-flash-latest`, `gemma4:e2b`)
 
 Base URL precedence is:
 1. `--base-url` / `-b`
@@ -80,11 +80,11 @@ Base URL precedence is:
 ## Running Ollama
 
 ```shell
-ollama run functiongemma
+ollama run gemma4:e2b
 ```
 
 ```shell
-dune exec -- agent-run --vendor ollama --model functiongemma --prompt "List all files in the directory 'test'."
+dune exec -- agent-run --vendor ollama --model gemma4:e2b --prompt "List all files in the directory 'test'."
 ```
 
 ## Running with Skills

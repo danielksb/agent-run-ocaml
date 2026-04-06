@@ -1,5 +1,5 @@
 {
-    "model": "functiongemma",
+    "model": "gemma4:e2b",
     "messages": [
         {
             "role": "user",
