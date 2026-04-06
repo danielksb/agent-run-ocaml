@@ -38,7 +38,7 @@ let test_register_skill_adds_valid_skill () =
         (contains instruction "description: Parses CSV files") ;
       Alcotest.(check bool)
         "path is present" true
-        (contains instruction ("path: " ^ path)) )
+        (contains instruction ("location: " ^ path)) )
 
 let test_register_skill_invalid_frontmatter_is_ignored () =
   let content = {|---
@@ -85,10 +85,10 @@ let test_register_skill_same_name_overrides_previous () =
             (contains instruction "description: first") ;
           Alcotest.(check bool)
             "new path is present" true
-            (contains instruction ("path: " ^ second_path)) ;
+            (contains instruction ("location: " ^ second_path)) ;
           Alcotest.(check bool)
             "old path is not present" false
-            (contains instruction ("path: " ^ first_path)) ) )
+            (contains instruction ("location: " ^ first_path)) ) )
 
 let test_augment_prompt_empty_registry_returns_original () =
   let original_prompt = "Investigate this issue." in
@@ -114,10 +114,12 @@ let test_augment_prompt_includes_registered_skills_and_user_prompt () =
       let actual = Skill_registry.augment_prompt ~original_prompt registry in
       Alcotest.(check bool)
         "contains heading" true
-        (contains actual "Skills are available for this request.") ;
+        (contains actual
+           "The following skills provide specialized instructions for specific \
+            tasks." ) ;
       Alcotest.(check bool)
         "contains skill path" true
-        (contains actual ("path: " ^ path)) ;
+        (contains actual ("location: " ^ path)) ;
       Alcotest.(check bool)
         "contains user prompt separator" true
         (contains actual "User prompt:") ;

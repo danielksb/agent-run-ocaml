@@ -88,9 +88,8 @@ let execute command =
          ; "-NoProfile"
          ; "-Command"
          ; "Invoke-Expression $env:AGENT_RUN_EXEC_COMMAND" |]
-      , Array.append
-          (Unix.environment ())
-          [| "AGENT_RUN_EXEC_COMMAND=" ^ command |] )
+      , Array.append (Unix.environment ())
+          [|"AGENT_RUN_EXEC_COMMAND=" ^ command|] )
     else ("sh", [|"sh"; "-c"; command|], Unix.environment ())
   in
   try
