@@ -92,3 +92,8 @@ dune exec -- agent-run --vendor ollama --model functiongemma --prompt "List all 
 ```shell
 dune exec -- agent-run --vendor openai --skill .\skills\playwright-cli.md --verbose --prompt "go to https://demo.playwright.dev/todomvc/, enter the TODO 'Learn Ocaml' and make a snapshot"
 ```
+
+
+```shell
+dune exec -- agent-run --vendor openai --skill .\skills\caveman.md --verbose --prompt "Answer like a caveman: What happened in the Weimar Republic in Germany."
+```
