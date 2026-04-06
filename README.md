@@ -18,6 +18,14 @@ Future versions might publish the library component in order to use it in other 
 
 `exec_command` runs via `sh -c` on Linux/macOS and PowerShell `Invoke-Expression` on Windows. This is powerful but high-risk; only use it in trusted environments.
 
+## Security
+
+Agent Run includes a built-in guard for file tools. `list_files`, `read_file`, and `write_file` are restricted to the configured working directory, and paths outside that root are denied.
+
+For safer runs, explicitly define and restrict the working directory to the smallest required scope:
+- CLI: `--working-directory <path>`
+- Config: `working_directory = "/path/to/safe/root"`
+
 ## How To Run
 
 Build and run with `dune exec`:
@@ -95,5 +103,5 @@ dune exec -- agent-run --vendor openai --skill .\skills\playwright-cli.md --verb
 
 
 ```shell
-dune exec -- agent-run --vendor openai --skill .\skills\caveman.md --verbose --prompt "Answer like a caveman: What happened in the Weimar Republic in Germany."
+dune exec -- agent-run --vendor gemini --skill .\skills\caveman.md --prompt "Use caveman skill. Describe the history of Germany since WW2. Put the result into output.txt. Open the file in notepad"
 ```
