@@ -23,7 +23,7 @@ let definition : Tool.t =
       ; required= ["file"; "content"] }
   ; strict= true }
 
-let run (args : Yojson.Safe.t) =
+let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
@@ -41,7 +41,9 @@ let run (args : Yojson.Safe.t) =
           Error ("Cannot call tool 'write_file': " ^ msg)
       in
       Result.bind parsed_args (fun (file_name, content) ->
-          Result.bind (Path_guard.guard_path file_name) (fun safe_file ->
+          Result.bind
+            (Path_guard.guard_path ~root:working_directory file_name)
+            (fun safe_file ->
               try
                 let out = open_out safe_file in
                 Fun.protect

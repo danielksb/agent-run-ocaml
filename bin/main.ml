@@ -12,6 +12,7 @@ let usage () =
   Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
   Printf.eprintf "  --base-url, -b Base URL override for selected vendor\n" ;
   Printf.eprintf "  --config, -c  Path to TOML config file\n" ;
+  Printf.eprintf "  --working-directory, -w Working directory for file tools\n" ;
   Printf.eprintf "  --skill, -s   Path to SKILL.md file (can be repeated)\n\n" ;
   Printf.eprintf "Environment variables:\n" ;
   Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI\n" ;
@@ -26,6 +27,7 @@ type params =
   ; skill_paths: string list
   ; model_name: string option
   ; base_url: string option
+  ; working_directory: string option
   ; debug: bool
   ; verbose: bool
   ; prompt: string option }
@@ -38,6 +40,7 @@ let parse_params () =
     ; skill_paths= []
     ; model_name= None
     ; base_url= None
+    ; working_directory= None
     ; debug= false
     ; verbose= false
     ; prompt= None }
@@ -58,6 +61,8 @@ let parse_params () =
         loop rest {params with model_name= Some model}
     | ("--base-url" | "-b") :: base_url :: rest ->
         loop rest {params with base_url= Some base_url}
+    | ("--working-directory" | "-w") :: working_directory :: rest ->
+        loop rest {params with working_directory= Some working_directory}
     | ("--prompt" | "-p") :: prompt :: rest ->
         loop rest {params with prompt= Some prompt}
     | rest ->
@@ -101,7 +106,8 @@ let run_agent (type a) (module A : Agent.AGENT with type t = a)
       A.send_request agent prompt |> Lwt_main.run )
   |> handle_result
 
-let run vendor app_config prompt params =
+let run vendor app_config prompt params working_directory =
+  let tool_context = Tool_registry.{working_directory} in
   match vendor with
   | OpenAi ->
       let model_name =
@@ -113,7 +119,9 @@ let run vendor app_config prompt params =
       let agent_result =
         match Sys.getenv_opt "OPENAI_API_KEY" with
         | Some api_key ->
-            Ok (OpenAiAgent.create {model_name; api_key; base_url})
+            Ok
+              (OpenAiAgent.create
+                 {model_name; api_key; base_url; tool_context} )
         | None ->
             Error Agent.{message= "OPENAI_API_KEY environment variable not set"}
       in
@@ -128,7 +136,9 @@ let run vendor app_config prompt params =
       let agent_result =
         match Sys.getenv_opt "GEMINI_API_KEY" with
         | Some api_key ->
-            Ok (GeminiAgent.create {model_name; api_key; base_url})
+            Ok
+              (GeminiAgent.create
+                 {model_name; api_key; base_url; tool_context} )
         | None ->
             Error Agent.{message= "GEMINI_API_KEY environment variable not set"}
       in
@@ -141,7 +151,9 @@ let run vendor app_config prompt params =
         Option.value params.base_url ~default:app_config.ollama.base_url
       in
       let agent_result =
-        Ok (OllamaAgent.create {model_name; api_key= ""; base_url})
+        Ok
+          (OllamaAgent.create
+             {model_name; api_key= ""; base_url; tool_context} )
       in
       run_agent (module OllamaAgent) agent_result prompt
 
@@ -167,13 +179,23 @@ let run_with_params params prompt =
   else if params.verbose then Logging.set_level Logging.Verbose
   else Logging.set_level Logging.Normal ;
   let config = Config.load params.config_path in
+  let effective_working_directory =
+    match params.working_directory with
+    | Some _ as dir ->
+        dir
+    | None ->
+        config.working_directory
+  in
+  let working_directory =
+    Option.value effective_working_directory ~default:(Sys.getcwd ())
+  in
   let prompt =
     params.skill_paths |> List.rev |> load_skill_registry
     |> Skill_registry.augment_prompt ~original_prompt:prompt
   in
   match parse_vendor params.vendor_name with
   | Some vendor ->
-      run vendor config prompt params
+      run vendor config prompt params working_directory
   | None ->
       Printf.eprintf "ERROR: unknown vendor \"%s\"\n" params.vendor_name ;
       exit 1

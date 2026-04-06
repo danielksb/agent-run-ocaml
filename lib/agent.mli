@@ -1,5 +1,9 @@
 (** Common runtime configuration for concrete agent implementations. *)
-type config = {model_name: string; api_key: string; base_url: string}
+type config =
+  { model_name: string
+  ; api_key: string
+  ; base_url: string
+  ; tool_context: Tool_registry.tool_context }
 
 (** Successful final response returned by an agent. *)
 type agent_response = {response: string} [@@deriving show, eq]

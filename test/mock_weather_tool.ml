@@ -23,7 +23,7 @@ let definition : Tool.t =
       ; required= ["location"; "unit"] }
   ; strict= true }
 
-let run (args : Yojson.Safe.t) =
+let run (_context : Tool_registry.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       Lwt.return e

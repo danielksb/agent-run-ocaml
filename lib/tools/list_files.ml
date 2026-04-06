@@ -26,7 +26,7 @@ let rec find_all_files file =
     else Seq.return file
   with Sys_error _ -> Seq.empty
 
-let run (args : Yojson.Safe.t) =
+let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
@@ -45,4 +45,4 @@ let run (args : Yojson.Safe.t) =
           Result.map
             (fun safe_dir ->
               find_all_files safe_dir |> List.of_seq |> String.concat "\n" )
-            (Path_guard.guard_path dir) )
+            (Path_guard.guard_path ~root:working_directory dir) )

@@ -6,7 +6,8 @@ module TestConfig = struct
   let agent_config : Agentlib.Agent.config =
     { model_name= "gemini-flash-latest"
     ; api_key= "TEST_KEY"
-    ; base_url= "https://generativelanguage.googleapis.com" }
+    ; base_url= "https://generativelanguage.googleapis.com"
+    ; tool_context= Agentlib.Tool_registry.{working_directory= "."} }
 
   let response_path = "data/gemini/response.json"
 

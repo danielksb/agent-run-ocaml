@@ -1,4 +1,8 @@
-type config = {model_name: string; api_key: string; base_url: string}
+type config =
+  { model_name: string
+  ; api_key: string
+  ; base_url: string
+  ; tool_context: Tool_registry.tool_context }
 
 type agent_response = {response: string} [@@deriving show, eq]
 
@@ -50,7 +54,8 @@ struct
 
   let create (config : config) = config
 
-  let execute_tool_call (tool_reg : Tool_registry.t) (tc : tool_call) :
+  let execute_tool_call (tool_reg : Tool_registry.t)
+      (tool_context : Tool_registry.tool_context) (tc : tool_call) :
       tool_result Lwt.t =
     let open Lwt in
     Logging.verbose
@@ -59,7 +64,7 @@ struct
     let wrap_content content = return {name= tc.name; content; id= tc.id} in
     match Tool_registry.find_handler tool_reg tc.name with
     | Some handler -> (
-        handler tc.arguments
+        handler tool_context tc.arguments
         >>= fun result ->
         match result with
         | Ok r ->
@@ -74,6 +79,7 @@ struct
     let headers = Vendor.request_headers agent in
     let url = Vendor.request_url agent in
     let registry = Tools.registry in
+    let tool_context = agent.tool_context in
     let tools = Tool_registry.tools registry in
     let rec loop step messages =
       let body = Vendor.request_body agent tools messages in
@@ -93,7 +99,9 @@ struct
             (Printf.sprintf "step %d model response tool_call" step) ;
           let assistant_msg = Vendor.assistant_message content tool_calls in
           let messages = messages @ [assistant_msg] in
-          let tool_results = List.map (execute_tool_call registry) tool_calls in
+          let tool_results =
+            List.map (execute_tool_call registry tool_context) tool_calls
+          in
           Lwt.all tool_results
           >>= fun results ->
           let messages =

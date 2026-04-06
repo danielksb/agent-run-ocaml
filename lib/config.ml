@@ -1,9 +1,14 @@
 type vendor = {model: string; base_url: string}
 
-type t = {openai: vendor; gemini: vendor; ollama: vendor}
+type t =
+  { working_directory: string option
+  ; openai: vendor
+  ; gemini: vendor
+  ; ollama: vendor }
 
 let default =
-  { openai= {model= "gpt-4o-mini"; base_url= "https://api.openai.com"}
+  { working_directory= None
+  ; openai= {model= "gpt-4o-mini"; base_url= "https://api.openai.com"}
   ; gemini=
       { model= "gemini-flash-latest"
       ; base_url= "https://generativelanguage.googleapis.com" }
@@ -34,7 +39,10 @@ let gemini_base_url_lens =
 let ollama_base_url_lens =
   Toml.Lenses.(field "ollama" |-- key "base_url" |-- string)
 
+let working_directory_lens = Toml.Lenses.(key "working_directory" |-- string)
+
 let of_toml (table : Toml.Types.table) =
+  let working_directory = Toml.Lenses.get table working_directory_lens in
   let openai_model =
     Toml.Lenses.get table openai_model_lens
     |> Option.value ~default:default.openai.model
@@ -59,7 +67,8 @@ let of_toml (table : Toml.Types.table) =
     Toml.Lenses.get table ollama_base_url_lens
     |> Option.value ~default:default.ollama.base_url
   in
-  { openai= {model= openai_model; base_url= openai_base_url}
+  { working_directory
+  ; openai= {model= openai_model; base_url= openai_base_url}
   ; gemini= {model= gemini_model; base_url= gemini_base_url}
   ; ollama= {model= ollama_model; base_url= ollama_base_url} }
 

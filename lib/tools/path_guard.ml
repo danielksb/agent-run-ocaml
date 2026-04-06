@@ -15,8 +15,6 @@ let is_path_within_root ~root ~path =
 let make_abs_path ~cwd path =
   if Filename.is_relative path then Filename.concat cwd path else path
 
-let cwd_root () = Unix.realpath (Sys.getcwd ())
-
 type mode = Must_exist | May_create
 
 let access_denied_error path cwd =
@@ -33,8 +31,8 @@ let realpath_result path =
   | Sys_error msg ->
       Error (Printf.sprintf "Cannot resolve path '%s': %s" path msg)
 
-let guard_path path =
-  let cwd = cwd_root () in
+let guard_path ~root path =
+  let cwd = Unix.realpath root in
   let abs_path = make_abs_path ~cwd path in
   let resolved_target =
     if Sys.file_exists abs_path then realpath_result abs_path

@@ -15,7 +15,7 @@ let definition : Tool.t =
       ; required= ["file"] }
   ; strict= true }
 
-let run (args : Yojson.Safe.t) =
+let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
@@ -30,7 +30,9 @@ let run (args : Yojson.Safe.t) =
       in
       Result.bind parsed_file (fun file ->
           try
-            Result.bind (Path_guard.guard_path file) (fun safe_file ->
+            Result.bind
+              (Path_guard.guard_path ~root:working_directory file)
+              (fun safe_file ->
                 let input = open_in safe_file in
                 Fun.protect
                   (fun () -> Ok (In_channel.input_all input))

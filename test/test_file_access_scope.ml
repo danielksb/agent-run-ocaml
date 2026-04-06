@@ -35,7 +35,8 @@ let test_read_file_denies_outside_cwd () =
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let result =
-            Read_file.run (`Assoc [("file", `String outside_file)])
+            Read_file.run ~working_directory:temp_cwd
+              (`Assoc [("file", `String outside_file)])
           in
           match result with
           | Ok _ ->
@@ -56,7 +57,7 @@ let test_write_file_denies_outside_cwd () =
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let result =
-            Write_file.run
+            Write_file.run ~working_directory:temp_cwd
               (`Assoc
                  [("file", `String outside_file); ("content", `String "new")] )
           in
@@ -88,7 +89,8 @@ let test_list_files_denies_outside_cwd () =
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let result =
-            List_files.run (`Assoc [("directory", `String outside_dir)])
+            List_files.run ~working_directory:temp_cwd
+              (`Assoc [("directory", `String outside_dir)])
           in
           match result with
           | Ok _ ->
@@ -109,7 +111,7 @@ let test_write_and_read_file_inside_cwd_succeeds () =
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let write_result =
-            Write_file.run
+            Write_file.run ~working_directory:temp_cwd
               (`Assoc
                  [("file", `String file_name); ("content", `String "inside")] )
           in
@@ -118,7 +120,8 @@ let test_write_and_read_file_inside_cwd_succeeds () =
             (Ok ("File " ^ file_name ^ " was successfully written."))
             write_result ;
           let read_result =
-            Read_file.run (`Assoc [("file", `String file_name)])
+            Read_file.run ~working_directory:temp_cwd
+              (`Assoc [("file", `String file_name)])
           in
           Alcotest.(check string_result_testable)
             "read inside cwd succeeds" (Ok "inside") read_result ) )
@@ -133,7 +136,8 @@ let test_read_file_missing_file_returns_error () =
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let result =
-            Read_file.run (`Assoc [("file", `String "does-not-exist.txt")])
+            Read_file.run ~working_directory:temp_cwd
+              (`Assoc [("file", `String "does-not-exist.txt")])
           in
           match result with
           | Ok _ ->
@@ -150,7 +154,7 @@ let test_write_file_missing_parent_returns_error () =
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let result =
-            Write_file.run
+            Write_file.run ~working_directory:temp_cwd
               (`Assoc
                  [ ("file", `String "missing\\dir\\file.txt")
                  ; ("content", `String "x") ] )
@@ -165,6 +169,26 @@ let test_write_file_missing_parent_returns_error () =
                 (contains msg "Cannot resolve path") ) )
     ~finally:(fun () -> if Sys.file_exists temp_cwd then Unix.rmdir temp_cwd)
 
+let test_read_file_uses_configured_guard_root () =
+  let temp_cwd = make_temp_dir "agent_run_cwd_" in
+  let temp_root = make_temp_dir "agent_run_root_" in
+  let inside_root_file = Filename.concat temp_root "inside.txt" in
+  write_text_file inside_root_file "inside-root" ;
+  Fun.protect
+    (fun () ->
+      with_cwd temp_cwd (fun () ->
+          let result =
+            Read_file.run ~working_directory:temp_root
+              (`Assoc [("file", `String inside_root_file)])
+          in
+          Alcotest.(check string_result_testable)
+            "read_file allows path in configured root"
+            (Ok "inside-root") result ) )
+    ~finally:(fun () ->
+      if Sys.file_exists inside_root_file then Sys.remove inside_root_file ;
+      if Sys.file_exists temp_root then Unix.rmdir temp_root ;
+      if Sys.file_exists temp_cwd then Unix.rmdir temp_cwd )
+
 let tests =
   ( "file_access_scope"
   , [ Alcotest.test_case "read_file denies outside cwd" `Quick
@@ -178,4 +202,6 @@ let tests =
     ; Alcotest.test_case "read_file missing file returns error" `Quick
         test_read_file_missing_file_returns_error
     ; Alcotest.test_case "write_file missing parent returns error" `Quick
-        test_write_file_missing_parent_returns_error ] )
+        test_write_file_missing_parent_returns_error
+    ; Alcotest.test_case "read_file uses configured guard root" `Quick
+        test_read_file_uses_configured_guard_root ] )

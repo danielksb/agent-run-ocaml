@@ -4,7 +4,10 @@ module TestConfig = struct
   let suite_name = "ollama_agent"
 
   let agent_config : Agentlib.Agent.config =
-    {model_name= "gemma4:e2b"; api_key= ""; base_url= "http://localhost:11434"}
+    { model_name= "gemma4:e2b"
+    ; api_key= ""
+    ; base_url= "http://localhost:11434"
+    ; tool_context= Agentlib.Tool_registry.{working_directory= "."} }
 
   let response_path = "data/ollama/response.json"
 

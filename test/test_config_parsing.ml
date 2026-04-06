@@ -52,6 +52,8 @@ let expect_raises name fn =
 let test_empty_config_uses_defaults () =
   with_temp_config "" (fun path ->
       let config = Config.load (Some path) in
+      Alcotest.(check (option string))
+        "working_directory default kept" None config.working_directory ;
       Alcotest.(check string)
         "openai model default kept" "gpt-4o-mini" config.openai.model ;
       Alcotest.(check string)
@@ -71,7 +73,9 @@ let test_empty_config_uses_defaults () =
 let test_parse_all_vendor_models () =
   let content =
     String.concat "\n"
-      [ "[openai]"
+      [ "working_directory = \"C:\\\\workspace\""
+      ; ""
+      ; "[openai]"
       ; "model = \"gpt-4.1-mini\""
       ; "base_url = \"https://api.openai.com\""
       ; ""
@@ -85,6 +89,9 @@ let test_parse_all_vendor_models () =
   in
   with_temp_config content (fun path ->
       let config = Config.load (Some path) in
+      Alcotest.(check (option string))
+        "working_directory parsed" (Some "C:\\workspace")
+        config.working_directory ;
       Alcotest.(check string)
         "openai model parsed" "gpt-4.1-mini" config.openai.model ;
       Alcotest.(check string)
@@ -128,6 +135,8 @@ let test_load_none_without_default_file_uses_defaults () =
           Unix.putenv "HOME" dir ;
           Unix.putenv "USERPROFILE" "" ;
           let config = Config.load None in
+          Alcotest.(check (option string))
+            "working_directory default" None config.working_directory ;
           Alcotest.(check string)
             "openai model default" "gpt-4o-mini" config.openai.model ;
           Alcotest.(check string)
@@ -168,6 +177,9 @@ let test_load_none_reads_default_file_from_home () =
           Out_channel.output_string out content ;
           close_out out ;
           let config = Config.load None in
+          Alcotest.(check (option string))
+            "working_directory loaded as none" None
+            config.working_directory ;
           Alcotest.(check string)
             "openai model loaded" "test-openai" config.openai.model ;
           Alcotest.(check string)
