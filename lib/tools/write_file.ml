@@ -38,12 +38,16 @@ let run (args : Yojson.Safe.t) =
           in
           Ok (file_name, content)
         with Yojson.Safe.Util.Type_error (msg, _) ->
-          Error ("Cannot call tool 'read_file': " ^ msg)
+          Error ("Cannot call tool 'write_file': " ^ msg)
       in
       Result.bind parsed_args (fun (file_name, content) ->
-          try
-            let out = open_out file_name in
-            Out_channel.output_string out content ;
-            Out_channel.flush out ;
-            Ok ("File " ^ file_name ^ " was successfully written.")
-          with Sys_error _ -> Error ("Cannot write file: " ^ file_name) )
+          Result.bind (Path_guard.guard_path file_name) (fun safe_file ->
+              try
+                let out = open_out safe_file in
+                Fun.protect
+                  (fun () ->
+                    Out_channel.output_string out content ;
+                    Out_channel.flush out ;
+                    Ok ("File " ^ file_name ^ " was successfully written.") )
+                  ~finally:(fun () -> close_out_noerr out)
+              with Sys_error _ -> Error ("Cannot write file: " ^ file_name) ) )

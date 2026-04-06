@@ -29,5 +29,10 @@ let run (args : Yojson.Safe.t) =
           Error ("Cannot call tool 'read_file': " ^ msg)
       in
       Result.bind parsed_file (fun file ->
-          try Ok (open_in file |> In_channel.input_all)
+          try
+            Result.bind (Path_guard.guard_path file) (fun safe_file ->
+                let input = open_in safe_file in
+                Fun.protect
+                  (fun () -> Ok (In_channel.input_all input))
+                  ~finally:(fun () -> close_in_noerr input) )
           with Sys_error _ -> Error ("Cannot read file: " ^ file) )

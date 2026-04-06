@@ -9,4 +9,5 @@ let () =
     ; Test_tool_registry.tests
     ; Test_exec_program.tests
     ; Test_skill.tests
-    ; Test_skill_registry.tests ]
+    ; Test_skill_registry.tests
+    ; Test_file_access_scope.tests ]

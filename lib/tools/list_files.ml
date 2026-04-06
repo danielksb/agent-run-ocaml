@@ -41,6 +41,8 @@ let run (args : Yojson.Safe.t) =
         with Yojson.Safe.Util.Type_error (msg, _) ->
           Error ("Cannot call tool 'list_files': " ^ msg)
       in
-      parsed_dir
-      |> Result.map (fun dir ->
-          find_all_files dir |> List.of_seq |> String.concat "\n" )
+      Result.bind parsed_dir (fun dir ->
+          Result.map
+            (fun safe_dir ->
+              find_all_files safe_dir |> List.of_seq |> String.concat "\n" )
+            (Path_guard.guard_path dir) )
