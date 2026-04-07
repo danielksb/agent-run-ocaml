@@ -12,6 +12,10 @@
 - Run the tests `dune test`
 - Format the code `dune fmt`
 
+## Code
+
+- All code including tests must run under Windows and Linux
+
 ## Output
 - Answer is always line 1. Reasoning comes after, never before.
 - No preamble. No "Great question!", "Sure!", "Of course!", "Certainly!", "Absolutely!".
