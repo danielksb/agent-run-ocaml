@@ -150,13 +150,19 @@ let test_read_file_missing_file_returns_error () =
 
 let test_write_file_missing_parent_returns_error () =
   let temp_cwd = make_temp_dir "agent_run_cwd_" in
+  let missing_parent_file =
+    Filename.concat "missing" (Filename.concat "dir" "file.txt")
+  in
+  let missing_parent_abs = Filename.concat temp_cwd missing_parent_file in
+  let missing_parent_dir = Filename.dirname missing_parent_abs in
+  let missing_parent_top = Filename.dirname missing_parent_dir in
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
           let result =
             Write_file.run ~working_directory:temp_cwd
               (`Assoc
-                 [ ("file", `String "missing\\dir\\file.txt")
+                 [ ("file", `String missing_parent_file)
                  ; ("content", `String "x") ] )
           in
           match result with
@@ -167,7 +173,11 @@ let test_write_file_missing_parent_returns_error () =
               Alcotest.(check bool)
                 "missing-parent returns resolve error" true
                 (contains msg "Cannot resolve path") ) )
-    ~finally:(fun () -> if Sys.file_exists temp_cwd then Unix.rmdir temp_cwd)
+    ~finally:(fun () ->
+      if Sys.file_exists missing_parent_abs then Sys.remove missing_parent_abs ;
+      if Sys.file_exists missing_parent_dir then Unix.rmdir missing_parent_dir ;
+      if Sys.file_exists missing_parent_top then Unix.rmdir missing_parent_top ;
+      if Sys.file_exists temp_cwd then Unix.rmdir temp_cwd )
 
 let test_read_file_uses_configured_guard_root () =
   let temp_cwd = make_temp_dir "agent_run_cwd_" in
