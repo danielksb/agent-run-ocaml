@@ -5,6 +5,7 @@ let usage () =
   Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
   Printf.eprintf "Usage: agent-run [options] <prompt>\n\n" ;
   Printf.eprintf "Options:\n" ;
+  Printf.eprintf "  --help, -h   Display usage info\n" ;
   Printf.eprintf "  --debug, -d   Enable debug logs to stderr\n" ;
   Printf.eprintf "  --verbose, -V Enable verbose logs to stdout\n" ;
   Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
@@ -30,7 +31,8 @@ type params =
   ; working_directory: string option
   ; debug: bool
   ; verbose: bool
-  ; prompt: string option }
+  ; prompt: string option
+  ; help: bool }
 
 (** Parses app parameters from argv *)
 let parse_params () =
@@ -43,7 +45,8 @@ let parse_params () =
     ; working_directory= None
     ; debug= false
     ; verbose= false
-    ; prompt= None }
+    ; prompt= None
+    ; help= false }
   in
   let rec loop argv params =
     match argv with
@@ -65,6 +68,8 @@ let parse_params () =
         loop rest {params with working_directory= Some working_directory}
     | ("--prompt" | "-p") :: prompt :: rest ->
         loop rest {params with prompt= Some prompt}
+    | ("--help" | "-h") :: rest ->
+        loop rest {params with help= true}
     | rest ->
         params
   in
@@ -202,11 +207,13 @@ let run_with_params params prompt =
 
 let () =
   let params = parse_params () in
-  match params.prompt with
-  | None ->
+  match params with
+  | {help= true} ->
+      usage ()
+  | {prompt= None} ->
       let prompt = In_channel.input_all stdin in
       run_with_params params prompt
-  | Some prompt ->
+  | {prompt= Some prompt} ->
       (* if the prompt is a file path then the content of the file will be the
          actual prompt *)
       if Sys.file_exists prompt && Sys.is_regular_file prompt then
