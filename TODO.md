@@ -1,7 +1,6 @@
 # TODOs
 
 ## Features
-- change prompt parameter to read stdin on "-"
 - add rate limit
 - add tool for editing a line in a file
 - add param which allows loading files into context

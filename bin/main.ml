@@ -3,12 +3,13 @@ open Config
 
 let usage () =
   Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
-  Printf.eprintf "Usage: agent-run [options] <prompt>\n\n" ;
+  Printf.eprintf "Usage: agent-run [options] --prompt <prompt>\n\n" ;
   Printf.eprintf "Options:\n" ;
   Printf.eprintf "  --help, -h   Display usage info\n" ;
   Printf.eprintf "  --debug, -d   Enable debug logs to stderr\n" ;
   Printf.eprintf "  --verbose, -V Enable verbose logs to stdout\n" ;
-  Printf.eprintf "  --prompt, -p  Prompt for LLM request\n" ;
+  Printf.eprintf
+    "  --prompt, -p  Prompt for LLM request, uses stdin when \"-\"\n" ;
   Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
   Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
   Printf.eprintf "  --base-url, -b Base URL override for selected vendor\n" ;
@@ -211,6 +212,12 @@ let () =
   | {help= true} ->
       usage ()
   | {prompt= None} ->
+      Printf.eprintf "ERROR: no prompt was defined.\n\n" ;
+      Printf.eprintf
+        "Use the command line argument \"--prompt\"/\"-p\" to set a prompt. " ;
+      Printf.eprintf "Pass \"--prompt -\" to read a prompt from stdin." ;
+      exit 1
+  | {prompt= Some "-"} ->
       let prompt = In_channel.input_all stdin in
       run_with_params params prompt
   | {prompt= Some prompt} ->
