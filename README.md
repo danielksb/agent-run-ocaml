@@ -2,15 +2,16 @@
 
 Agent Run is a small OCaml CLI application that sends prompts to an LLM vendor (currently `openai`, `gemini` and `ollama`), supports tool calls, and prints the final model response to stdout.
 
-The primary goal of this project is to learn OCaml and play around with different LLM APIs. The runner is suppose to be small enough to be used in shell scripts.
+The primary goal of this project is to learn OCaml and play around with different LLM APIs. The runner is supposed to be small enough to be used in shell scripts.
 
 Future versions might publish the library component in order to use it in other projects.
 
 ## Built-in Tools
 
-- `list_files`
-- `read_file`
-- `write_file`
+- `list_files`: lists files recursively in a given directory
+- `read_file`: reads file content
+- `write_file`: writes a string to a file
+- `edit_file`: replaces strings in a file
 - `exec_command`: executes a shell command and returns:
   - `status code: <n>`
   - combined stdout/stderr output
@@ -98,7 +99,7 @@ dune exec -- agent-run --vendor ollama --model gemma4:e2b --prompt "List all fil
 ## Running with Skills
 
 ```shell
-dune exec -- agent-run --vendor openai --skill .\skills\playwright-cli.md --verbose --prompt "go to https://demo.playwright.dev/todomvc/, enter the TODO 'Learn Ocaml' and make a snapshot"
+dune exec -- agent-run --vendor openai --skill .\skills\playwright-cli.md --verbose --prompt "go to https://demo.playwright.dev/todomvc/, enter the TODO 'Learn OCaml' and make a snapshot"
 ```
 
 

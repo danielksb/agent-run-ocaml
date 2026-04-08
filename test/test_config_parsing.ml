@@ -178,8 +178,7 @@ let test_load_none_reads_default_file_from_home () =
           close_out out ;
           let config = Config.load None in
           Alcotest.(check (option string))
-            "working_directory loaded as none" None
-            config.working_directory ;
+            "working_directory loaded as none" None config.working_directory ;
           Alcotest.(check string)
             "openai model loaded" "test-openai" config.openai.model ;
           Alcotest.(check string)

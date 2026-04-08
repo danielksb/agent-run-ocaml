@@ -192,8 +192,7 @@ let test_read_file_uses_configured_guard_root () =
               (`Assoc [("file", `String inside_root_file)])
           in
           Alcotest.(check string_result_testable)
-            "read_file allows path in configured root"
-            (Ok "inside-root") result ) )
+            "read_file allows path in configured root" (Ok "inside-root") result ) )
     ~finally:(fun () ->
       if Sys.file_exists inside_root_file then Sys.remove inside_root_file ;
       if Sys.file_exists temp_root then Unix.rmdir temp_root ;
