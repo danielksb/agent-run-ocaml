@@ -41,15 +41,11 @@ let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
           Error ("Cannot call tool 'write_file': " ^ msg)
       in
       Result.bind parsed_args (fun (file_name, content) ->
-          Result.bind
-            (Path_guard.guard_path ~root:working_directory file_name)
+          Result.bind (Path_guard.guard_path ~root:working_directory file_name)
             (fun safe_file ->
               try
-                let out = open_out safe_file in
-                Fun.protect
-                  (fun () ->
+                Out_channel.with_open_text safe_file (fun out ->
                     Out_channel.output_string out content ;
                     Out_channel.flush out ;
                     Ok ("File " ^ file_name ^ " was successfully written.") )
-                  ~finally:(fun () -> close_out_noerr out)
               with Sys_error _ -> Error ("Cannot write file: " ^ file_name) ) )

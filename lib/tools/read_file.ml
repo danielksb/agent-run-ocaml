@@ -30,11 +30,8 @@ let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
       in
       Result.bind parsed_file (fun file ->
           try
-            Result.bind
-              (Path_guard.guard_path ~root:working_directory file)
+            Result.bind (Path_guard.guard_path ~root:working_directory file)
               (fun safe_file ->
-                let input = open_in safe_file in
-                Fun.protect
-                  (fun () -> Ok (In_channel.input_all input))
-                  ~finally:(fun () -> close_in_noerr input) )
+                Result.ok
+                @@ In_channel.with_open_text safe_file In_channel.input_all )
           with Sys_error _ -> Error ("Cannot read file: " ^ file) )
