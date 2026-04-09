@@ -3,8 +3,6 @@ open Agentlib
 module CliPlatform = Cli.Make (struct
   include Sys
 
-  let exit_with_error () = exit 1
-
   let stdin_read_all () = In_channel.input_all stdin
 
   let file_read_all file = open_in file |> In_channel.input_all
@@ -22,8 +20,15 @@ module OllamaAgent =
 module GeminiAgent =
   Agent.Make (Gemini_agent.Vendor) (DefaultHttpClient) (ProdTools)
 
-let run_agent (type a) (module A : Agent.AGENT with type t = a) agent_config
-    prompt =
+let agent_vendor_module = function
+  | Cli.OpenAi ->
+      (module OpenAiAgent : Agent.AGENT)
+  | Cli.Gemini ->
+      (module GeminiAgent : Agent.AGENT)
+  | Cli.Ollama ->
+      (module OllamaAgent : Agent.AGENT)
+
+let run_agent (module A : Agent.AGENT) agent_config prompt =
   let agent = A.create agent_config in
   let result = A.send_request agent prompt |> Lwt_main.run in
   match result with
@@ -38,11 +43,5 @@ let () =
   | Error msg ->
       Printf.eprintf "%s\n" (Cli.cli_msg_to_string msg) ;
       exit 1
-  | Ok {agent_config; prompt; vendor} -> (
-    match vendor with
-    | Cli.OpenAi ->
-        run_agent (module OpenAiAgent) agent_config prompt
-    | Cli.Gemini ->
-        run_agent (module GeminiAgent) agent_config prompt
-    | Cli.Ollama ->
-        run_agent (module OllamaAgent) agent_config prompt )
+  | Ok {agent_config; prompt; vendor} ->
+      run_agent (agent_vendor_module vendor) agent_config prompt
