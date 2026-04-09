@@ -4,7 +4,6 @@ type handler = tool_context -> Yojson.Safe.t -> (string, string) result Lwt.t
 
 module StringMap = Map.Make (String)
 
-(** Type alias so [@@deriving yojson] can find the converters. *)
 type 'a string_map = 'a StringMap.t
 
 let string_map_to_yojson value_to_yojson m =
