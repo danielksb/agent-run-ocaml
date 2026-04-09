@@ -38,13 +38,11 @@ let () =
   | Error msg ->
       Printf.eprintf "%s\n" (Cli.cli_msg_to_string msg) ;
       exit 1
-  | Ok params -> (
-      let agent_result = params.agent_config in
-      let prompt = params.prompt in
-      match params.vendor with
-      | Cli.OpenAi ->
-          run_agent (module OpenAiAgent) agent_result prompt
-      | Cli.Gemini ->
-          run_agent (module GeminiAgent) agent_result prompt
-      | Cli.Ollama ->
-          run_agent (module OllamaAgent) agent_result prompt )
+  | Ok {agent_config; prompt; vendor} -> (
+    match vendor with
+    | Cli.OpenAi ->
+        run_agent (module OpenAiAgent) agent_config prompt
+    | Cli.Gemini ->
+        run_agent (module GeminiAgent) agent_config prompt
+    | Cli.Ollama ->
+        run_agent (module OllamaAgent) agent_config prompt )
