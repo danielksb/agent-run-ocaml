@@ -42,7 +42,7 @@ module Make (Http : Http_client.S) = struct
           Lwt.return
           @@ create_error ("response status is " ^ Int.to_string status) )
 
-  let run (args : Yojson.Safe.t) =
+  let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
     match Tool.validate_arguments definition args with
     | Error _ as e ->
         Lwt.return e

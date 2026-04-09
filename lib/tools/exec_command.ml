@@ -102,7 +102,7 @@ let parse_command args =
   try Ok (Yojson.Safe.Util.member "command" args |> Yojson.Safe.Util.to_string)
   with Yojson.Safe.Util.Type_error (msg, _) -> prefixed_error msg
 
-let run (args : Yojson.Safe.t) =
+let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e

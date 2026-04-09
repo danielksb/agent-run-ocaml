@@ -113,7 +113,7 @@ let run_agent (type a) (module A : Agent.AGENT with type t = a)
   |> handle_result
 
 let run vendor app_config prompt params working_directory =
-  let tool_context = Tool_registry.{working_directory} in
+  let tool_context = Tool.{working_directory} in
   match vendor with
   | OpenAi ->
       let model_name =

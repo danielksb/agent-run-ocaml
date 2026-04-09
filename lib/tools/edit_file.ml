@@ -76,7 +76,7 @@ let replace_content ~content ~old_string ~new_string ~replace_all =
           let suffix = String.sub content suffix_start suffix_len in
           Ok (prefix ^ new_string ^ suffix)
 
-let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
+let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
@@ -102,6 +102,7 @@ let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
         with Yojson.Safe.Util.Type_error (msg, _) ->
           Error ("Cannot call tool 'edit_file': " ^ msg)
       in
+      let working_directory = tool_context.working_directory in
       Result.bind parsed_args
         (fun (file_name, old_string, new_string, replace_all) ->
           Result.bind (Path_guard.guard_path ~root:working_directory file_name)
@@ -117,6 +118,5 @@ let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
                     Out_channel.with_open_text safe_file (fun out ->
                         Out_channel.output_string out updated_content ;
                         Out_channel.flush out ;
-                        Ok ("File " ^ file_name ^ " was successfully written.")
-                    ))
+                        Ok ("File " ^ file_name ^ " was successfully written.") ) )
               with Sys_error _ -> Error ("Cannot edit file: " ^ file_name) ) )

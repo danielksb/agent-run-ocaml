@@ -23,7 +23,10 @@ let command_for_mixed_streams_nonzero () =
 let command_for_argument_echo value =
   if Sys.win32 then "Write-Output " ^ value else "printf '%s\\n' " ^ value
 
-let run_exec command = Exec_command.run (`Assoc [("command", `String command)])
+let run_exec command =
+  Exec_command.run
+    {working_directory= Sys.getcwd ()}
+    (`Assoc [("command", `String command)])
 
 let test_success_exit_code_zero () =
   let command = command_for_simple_output () in
@@ -70,14 +73,20 @@ let test_argument_list_passed () =
   Alcotest.(check bool) "argument value preserved" true (contains output arg)
 
 let test_missing_program_validation_error () =
-  let result = Exec_command.run (`Assoc [("args", `List [`String "x"])]) in
+  let result =
+    Exec_command.run
+      {working_directory= Sys.getcwd ()}
+      (`Assoc [("args", `List [`String "x"])])
+  in
   Alcotest.(check string_result_testable)
     "missing required command is rejected"
     (Error "missing required argument: command") result
 
 let test_wrong_args_type_validation_error () =
   let result =
-    Exec_command.run (`Assoc [("command", `List [`String "echo"])])
+    Exec_command.run
+      {working_directory= Sys.getcwd ()}
+      (`Assoc [("command", `List [`String "echo"])])
   in
   Alcotest.(check string_result_testable)
     "wrong command type is rejected"

@@ -1,3 +1,7 @@
+type tool_context = {working_directory: string}
+
+type handler = tool_context -> Yojson.Safe.t -> (string, string) result Lwt.t
+
 module StringMap = Map.Make (String)
 
 (** Type alias so [@@deriving yojson] can find the converters. *)

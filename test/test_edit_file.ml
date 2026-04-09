@@ -4,9 +4,7 @@ let string_result_testable = Alcotest.(result string string)
 
 let make_temp_dir prefix =
   let path = Filename.temp_file prefix ".tmp" in
-  Sys.remove path ;
-  Unix.mkdir path 0o700 ;
-  path
+  Sys.remove path ; Unix.mkdir path 0o700 ; path
 
 let write_text_file path content =
   let out = open_out path in
@@ -22,9 +20,7 @@ let read_text_file path =
 let with_cwd dir f =
   let old_cwd = Sys.getcwd () in
   Fun.protect
-    (fun () ->
-      Unix.chdir dir ;
-      f () )
+    (fun () -> Unix.chdir dir ; f ())
     ~finally:(fun () -> Unix.chdir old_cwd)
 
 let test_edit_file_replaces_first_occurrence_only () =
@@ -35,8 +31,9 @@ let test_edit_file_replaces_first_occurrence_only () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            Edit_file.run ~working_directory:temp_cwd
+            Edit_file.run tool_context
               (`Assoc
                  [ ("file", `String file_name)
                  ; ("old_string", `String "one")
@@ -62,8 +59,9 @@ let test_edit_file_replaces_all_occurrences () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            Edit_file.run ~working_directory:temp_cwd
+            Edit_file.run tool_context
               (`Assoc
                  [ ("file", `String file_name)
                  ; ("old_string", `String "one")
@@ -75,8 +73,7 @@ let test_edit_file_replaces_all_occurrences () =
             (Ok ("File " ^ file_name ^ " was successfully written."))
             result ;
           let content = read_text_file inside_path in
-          Alcotest.(check string)
-            "all occurrences replaced" "1 two 1" content ) )
+          Alcotest.(check string) "all occurrences replaced" "1 two 1" content ) )
     ~finally:(fun () ->
       if Sys.file_exists inside_path then Sys.remove inside_path ;
       if Sys.file_exists temp_cwd then Unix.rmdir temp_cwd )

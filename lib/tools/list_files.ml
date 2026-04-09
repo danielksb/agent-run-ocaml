@@ -26,7 +26,7 @@ let rec find_all_files file =
     else Seq.return file
   with Sys_error _ -> Seq.empty
 
-let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
+let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
@@ -41,6 +41,7 @@ let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
         with Yojson.Safe.Util.Type_error (msg, _) ->
           Error ("Cannot call tool 'list_files': " ^ msg)
       in
+      let working_directory = tool_context.working_directory in
       Result.bind parsed_dir (fun dir ->
           Result.map
             (fun safe_dir ->

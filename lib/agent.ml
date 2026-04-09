@@ -2,7 +2,7 @@ type config =
   { model_name: string
   ; api_key: string
   ; base_url: string
-  ; tool_context: Tool_registry.tool_context }
+  ; tool_context: Tool.tool_context }
 
 type agent_response = {response: string} [@@deriving show, eq]
 
@@ -55,8 +55,7 @@ struct
   let create (config : config) = config
 
   let execute_tool_call (tool_reg : Tool_registry.t)
-      (tool_context : Tool_registry.tool_context) (tc : tool_call) :
-      tool_result Lwt.t =
+      (tool_context : Tool.tool_context) (tc : tool_call) : tool_result Lwt.t =
     let open Lwt in
     Logging.verbose
       (Printf.sprintf "Calling tool \"%s\" with %s" tc.name

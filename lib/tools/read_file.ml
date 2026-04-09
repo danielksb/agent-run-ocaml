@@ -15,7 +15,7 @@ let definition : Tool.t =
       ; required= ["file"] }
   ; strict= true }
 
-let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
+let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
@@ -28,6 +28,7 @@ let run ?(working_directory = Sys.getcwd ()) (args : Yojson.Safe.t) =
         with Type_error (msg, _) ->
           Error ("Cannot call tool 'read_file': " ^ msg)
       in
+      let working_directory = tool_context.working_directory in
       Result.bind parsed_file (fun file ->
           try
             Result.bind (Path_guard.guard_path ~root:working_directory file)

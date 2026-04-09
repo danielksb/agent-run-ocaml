@@ -34,9 +34,9 @@ let test_read_file_denies_outside_cwd () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            Read_file.run ~working_directory:temp_cwd
-              (`Assoc [("file", `String outside_file)])
+            Read_file.run tool_context (`Assoc [("file", `String outside_file)])
           in
           match result with
           | Ok _ ->
@@ -56,8 +56,9 @@ let test_write_file_denies_outside_cwd () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            Write_file.run ~working_directory:temp_cwd
+            Write_file.run tool_context
               (`Assoc
                  [("file", `String outside_file); ("content", `String "new")] )
           in
@@ -88,8 +89,9 @@ let test_list_files_denies_outside_cwd () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            List_files.run ~working_directory:temp_cwd
+            List_files.run tool_context
               (`Assoc [("directory", `String outside_dir)])
           in
           match result with
@@ -110,8 +112,9 @@ let test_write_and_read_file_inside_cwd_succeeds () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let write_result =
-            Write_file.run ~working_directory:temp_cwd
+            Write_file.run tool_context
               (`Assoc
                  [("file", `String file_name); ("content", `String "inside")] )
           in
@@ -120,8 +123,7 @@ let test_write_and_read_file_inside_cwd_succeeds () =
             (Ok ("File " ^ file_name ^ " was successfully written."))
             write_result ;
           let read_result =
-            Read_file.run ~working_directory:temp_cwd
-              (`Assoc [("file", `String file_name)])
+            Read_file.run tool_context (`Assoc [("file", `String file_name)])
           in
           Alcotest.(check string_result_testable)
             "read inside cwd succeeds" (Ok "inside") read_result ) )
@@ -135,8 +137,9 @@ let test_read_file_missing_file_returns_error () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            Read_file.run ~working_directory:temp_cwd
+            Read_file.run tool_context
               (`Assoc [("file", `String "does-not-exist.txt")])
           in
           match result with
@@ -159,8 +162,9 @@ let test_write_file_missing_parent_returns_error () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_cwd} in
           let result =
-            Write_file.run ~working_directory:temp_cwd
+            Write_file.run tool_context
               (`Assoc
                  [ ("file", `String missing_parent_file)
                  ; ("content", `String "x") ] )
@@ -187,8 +191,9 @@ let test_read_file_uses_configured_guard_root () =
   Fun.protect
     (fun () ->
       with_cwd temp_cwd (fun () ->
+          let tool_context = Tool.{working_directory= temp_root} in
           let result =
-            Read_file.run ~working_directory:temp_root
+            Read_file.run tool_context
               (`Assoc [("file", `String inside_root_file)])
           in
           Alcotest.(check string_result_testable)

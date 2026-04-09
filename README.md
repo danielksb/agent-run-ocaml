@@ -106,3 +106,10 @@ dune exec -- agent-run --vendor openai --skill .\skills\playwright-cli.md --verb
 ```shell
 dune exec -- agent-run --vendor gemini --skill .\skills\caveman.md --prompt "Use caveman skill. Describe the history of Germany since WW2. Put the result into output.txt. Open the file in notepad"
 ```
+
+## Piping Prompts
+
+```powershell
+ "Caveman mode. Review the following code change and return a list of things which must be improved and which should be improved: \n" + (git show | Out-String) | dune exec -- agent-run --vendor openai --skill .\skills\caveman.md --prompt -
+```
+

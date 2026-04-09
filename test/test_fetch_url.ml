@@ -22,7 +22,9 @@ let test_fetch_url_uses_http_mock () =
       let module FetchUrl = Fetch_url.Make (Http) in
       let result =
         Lwt_main.run
-          (FetchUrl.run (`Assoc [("url", `String "https://example.com/test")]))
+          (FetchUrl.run
+             {working_directory= Sys.getcwd ()}
+             (`Assoc [("url", `String "https://example.com/test")]) )
       in
       Alcotest.(check string_result_testable)
         "response body is returned from mock" (Ok "mock body from test server")
