@@ -7,8 +7,6 @@ module type PLATFORM = sig
 
   val file_exists : string -> bool
 
-  val exit_with_error : unit -> 'a
-
   val is_regular_file : string -> bool
 
   val stdin_read_all : unit -> string
@@ -16,36 +14,61 @@ module type PLATFORM = sig
   val file_read_all : string -> string
 end
 
-module type S = sig
-  val usage : unit -> unit
+type vendor = OpenAi | Gemini | Ollama
 
-  val execute : unit -> unit
+type cli_msg =
+  | Usage
+  | NoPrompt
+  | UnknownVendor of string
+  | NoApiKey of string
+  | LoadSkillFailed of string
+
+type runtime_parameters =
+  {agent_config: Agent.config; vendor: vendor; prompt: string}
+
+module type S = sig
+  val create_agent_config : unit -> (runtime_parameters, cli_msg) result
 end
+
+let usage =
+  {|
+    Agent-Run: LLM Agent Runner
+
+    Usage: agent-run [options] --prompt <prompt>
+
+    Options:
+      --help, -h   Display usage info
+      --debug, -d   Enable debug logs to stderr
+      --verbose, -V Enable verbose logs to stdout
+      --prompt, -p  Prompt for LLM request, uses stdin when "-"
+      --vendor, -v  LLM vendor (openai, gemini, ollama)
+      --model, -m   Model override for selected vendor
+      --base-url, -b Base URL override for selected vendor
+      --config, -c  Path to TOML config file
+      --working-directory, -w Working directory for file tools
+      --skill, -s   Path to SKILL.md file (can be repeated)
+
+    Environment variables:
+      OPENAI_API_KEY - API key for OpenAI
+      GEMINI_API_KEY - API key for Gemini
+|}
+
+let cli_msg_to_string = function
+  | Usage ->
+      usage
+  | UnknownVendor vendor ->
+      Printf.sprintf "ERROR: unknown vendor \"%s\"\n" vendor
+  | NoPrompt ->
+      "ERROR: no prompt was defined.\n\n"
+      ^ "Use the command line argument \"--prompt\"/\"-p\" to set a prompt. "
+      ^ "Pass \"--prompt -\" to read a prompt from stdin."
+  | LoadSkillFailed msg ->
+      Printf.sprintf "ERROR: %s\n" msg
+  | NoApiKey key ->
+      key ^ " environment variable not set"
 
 module Make (Platform : PLATFORM) = struct
   open Config
-
-  let usage () =
-    Printf.eprintf "Agent-Run: LLM Agent Runner\n\n" ;
-    Printf.eprintf "Usage: agent-run [options] --prompt <prompt>\n\n" ;
-    Printf.eprintf "Options:\n" ;
-    Printf.eprintf "  --help, -h   Display usage info\n" ;
-    Printf.eprintf "  --debug, -d   Enable debug logs to stderr\n" ;
-    Printf.eprintf "  --verbose, -V Enable verbose logs to stdout\n" ;
-    Printf.eprintf
-      "  --prompt, -p  Prompt for LLM request, uses stdin when \"-\"\n" ;
-    Printf.eprintf "  --vendor, -v  LLM vendor (openai, gemini, ollama)\n" ;
-    Printf.eprintf "  --model, -m   Model override for selected vendor\n" ;
-    Printf.eprintf "  --base-url, -b Base URL override for selected vendor\n" ;
-    Printf.eprintf "  --config, -c  Path to TOML config file\n" ;
-    Printf.eprintf
-      "  --working-directory, -w Working directory for file tools\n" ;
-    Printf.eprintf "  --skill, -s   Path to SKILL.md file (can be repeated)\n\n" ;
-    Printf.eprintf "Environment variables:\n" ;
-    Printf.eprintf "  OPENAI_API_KEY - API key for OpenAI\n" ;
-    Printf.eprintf "  GEMINI_API_KEY - API key for Gemini\n"
-
-  type vendor = OpenAi | Gemini | Ollama
 
   (** application parameters defined when starting the program *)
   type params =
@@ -112,146 +135,101 @@ module Make (Platform : PLATFORM) = struct
     | _ ->
         None
 
-  module ProdTools = struct
-    let registry = Tool_registry.default_registry
-  end
-
-  module DefaultHttpClient = Http_client.Default
-  module OpenAiAgent =
-    Agent.Make (Openai_agent.Vendor) (DefaultHttpClient) (ProdTools)
-  module OllamaAgent =
-    Agent.Make (Ollama_agent.Vendor) (DefaultHttpClient) (ProdTools)
-  module GeminiAgent =
-    Agent.Make (Gemini_agent.Vendor) (DefaultHttpClient) (ProdTools)
-
-  let handle_result = function
-    | Error (error : Agent.agent_error) ->
-        Printf.fprintf stderr "ERROR: %s\n" error.message ;
-        Platform.exit_with_error ()
-    | Ok (response : Agent.agent_response) ->
-        print_endline response.response
-
-  let run_agent (type a) (module A : Agent.AGENT with type t = a)
-      (agent_result : (a, Agent.agent_error) result) prompt =
-    Result.bind agent_result (fun agent ->
-        A.send_request agent prompt |> Lwt_main.run )
-    |> handle_result
-
-  let run vendor app_config prompt params working_directory =
-    let tool_context = Tool.{working_directory} in
+  let agent_app_config vendor app_config =
     match vendor with
     | OpenAi ->
-        let model_name =
-          Option.value params.model_name ~default:app_config.openai.model
-        in
-        let base_url =
-          Option.value params.base_url ~default:app_config.openai.base_url
-        in
-        let agent_result =
-          match Platform.getenv_opt "OPENAI_API_KEY" with
-          | Some api_key ->
-              Ok
-                (OpenAiAgent.create
-                   {model_name; api_key; base_url; tool_context} )
-          | None ->
-              Error
-                Agent.{message= "OPENAI_API_KEY environment variable not set"}
-        in
-        run_agent (module OpenAiAgent) agent_result prompt
+        app_config.openai
     | Gemini ->
-        let model_name =
-          Option.value params.model_name ~default:app_config.gemini.model
-        in
-        let base_url =
-          Option.value params.base_url ~default:app_config.gemini.base_url
-        in
-        let agent_result =
-          match Platform.getenv_opt "GEMINI_API_KEY" with
-          | Some api_key ->
-              Ok
-                (GeminiAgent.create
-                   {model_name; api_key; base_url; tool_context} )
-          | None ->
-              Error
-                Agent.{message= "GEMINI_API_KEY environment variable not set"}
-        in
-        run_agent (module GeminiAgent) agent_result prompt
+        app_config.gemini
     | Ollama ->
-        let model_name =
-          Option.value params.model_name ~default:app_config.ollama.model
-        in
-        let base_url =
-          Option.value params.base_url ~default:app_config.ollama.base_url
-        in
-        let agent_result =
-          Ok
-            (OllamaAgent.create
-               {model_name; api_key= ""; base_url; tool_context} )
-        in
-        run_agent (module OllamaAgent) agent_result prompt
+        app_config.ollama
+
+  let retrieve_api_key vendor =
+    let key_name =
+      match vendor with
+      | OpenAi ->
+          "OPENAI_API_KEY"
+      | Gemini ->
+          "GEMINI_API_KEY"
+      | Ollama ->
+          "OLLAMA_API_KEY"
+    in
+    match Platform.getenv_opt key_name with
+    | None ->
+        if vendor = Ollama then Ok "" else Error (NoApiKey key_name)
+    | Some api_key ->
+        Ok api_key
 
   let resolve_skill_path skill_path =
     if Filename.is_relative skill_path then
       Filename.concat (Platform.getcwd ()) skill_path
     else skill_path
 
+  let load_skill registry skill_path =
+    let absolute_path = resolve_skill_path skill_path in
+    match Skill.load_from_file absolute_path with
+    | Ok _ ->
+        Result.ok @@ Skill_registry.register_skill registry absolute_path
+    | Error msg ->
+        Result.error @@ LoadSkillFailed msg
+
   let load_skill_registry skill_paths =
+    let empty_registry = Result.ok @@ Skill_registry.empty () in
     List.fold_left
       (fun registry skill_path ->
-        let absolute_path = resolve_skill_path skill_path in
-        match Skill.load_from_file absolute_path with
-        | Ok _ ->
-            Skill_registry.register_skill registry absolute_path
-        | Error msg ->
-            Printf.eprintf "ERROR: %s\n" msg ;
-            Platform.exit_with_error () )
-      (Skill_registry.empty ()) skill_paths
+        Result.bind registry (fun reg -> load_skill reg skill_path) )
+      empty_registry skill_paths
 
-  let run_with_params params prompt =
+  let build_runtime_params params prompt =
+    let ( let* ) = Result.bind in
+    let ( <|> ) = fun a b -> if Option.is_some a then a else b in
+    let config = Config.load params.config_path in
+    let working_directory =
+      params.working_directory <|> config.working_directory
+      |> Option.value ~default:(Platform.getcwd ())
+    in
+    let* prompt =
+      params.skill_paths |> List.rev |> load_skill_registry
+      |> Result.map (fun reg ->
+          Skill_registry.augment_prompt reg ~original_prompt:prompt )
+    in
+    let* vendor =
+      parse_vendor params.vendor_name
+      |> Option.to_result ~none:(UnknownVendor params.vendor_name)
+    in
+    let tool_context = Tool.{working_directory} in
+    let agent_app_config = agent_app_config vendor config in
+    let model_name =
+      Option.value params.model_name ~default:agent_app_config.model
+    in
+    let base_url =
+      Option.value params.base_url ~default:agent_app_config.base_url
+    in
+    let* api_key = retrieve_api_key vendor in
+    let agent_config = Agent.{model_name; api_key; base_url; tool_context} in
+    Ok {agent_config; vendor; prompt}
+
+  let set_log_level params =
     if params.debug then Logging.set_level Logging.Debug
     else if params.verbose then Logging.set_level Logging.Verbose
-    else Logging.set_level Logging.Normal ;
-    let config = Config.load params.config_path in
-    let effective_working_directory =
-      match params.working_directory with
-      | Some _ as dir ->
-          dir
-      | None ->
-          config.working_directory
-    in
-    let working_directory =
-      Option.value effective_working_directory ~default:(Platform.getcwd ())
-    in
-    let prompt =
-      params.skill_paths |> List.rev |> load_skill_registry
-      |> Skill_registry.augment_prompt ~original_prompt:prompt
-    in
-    match parse_vendor params.vendor_name with
-    | Some vendor ->
-        run vendor config prompt params working_directory
-    | None ->
-        Printf.eprintf "ERROR: unknown vendor \"%s\"\n" params.vendor_name ;
-        Platform.exit_with_error ()
+    else Logging.set_level Logging.Normal
 
-  let execute () =
+  let create_agent_config () =
     let params = parse_params () in
+    set_log_level params ;
     match params with
     | {help= true} ->
-        usage ()
+        Error Usage
     | {prompt= None} ->
-        Printf.eprintf "ERROR: no prompt was defined.\n\n" ;
-        Printf.eprintf
-          "Use the command line argument \"--prompt\"/\"-p\" to set a prompt. " ;
-        Printf.eprintf "Pass \"--prompt -\" to read a prompt from stdin." ;
-        exit 1
+        Error NoPrompt
     | {prompt= Some "-"} ->
         let prompt = Platform.stdin_read_all () in
-        run_with_params params prompt
+        build_runtime_params params prompt
     | {prompt= Some prompt} ->
         (* if the prompt is a file path then the content of the file will be the
            actual prompt *)
         if Platform.file_exists prompt && Platform.is_regular_file prompt then
           let actual_prompt = Platform.file_read_all prompt in
-          run_with_params params actual_prompt
-        else run_with_params params prompt
+          build_runtime_params params actual_prompt
+        else build_runtime_params params prompt
 end

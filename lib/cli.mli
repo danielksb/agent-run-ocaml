@@ -7,8 +7,6 @@ module type PLATFORM = sig
 
   val file_exists : string -> bool
 
-  val exit_with_error : unit -> 'a
-
   val is_regular_file : string -> bool
 
   val stdin_read_all : unit -> string
@@ -16,10 +14,22 @@ module type PLATFORM = sig
   val file_read_all : string -> string
 end
 
-module type S = sig
-  val usage : unit -> unit
+type vendor = OpenAi | Gemini | Ollama
 
-  val execute : unit -> unit
+type cli_msg =
+  | Usage
+  | NoPrompt
+  | UnknownVendor of string
+  | NoApiKey of string
+  | LoadSkillFailed of string
+
+type runtime_parameters =
+  {agent_config: Agent.config; vendor: vendor; prompt: string}
+
+val cli_msg_to_string : cli_msg -> string
+
+module type S = sig
+  val create_agent_config : unit -> (runtime_parameters, cli_msg) result
 end
 
 module Make : functor (Platform : PLATFORM) -> S
