@@ -1,3 +1,5 @@
 _build/
+_opam/
 prompt.txt
 .playwright-cli
+_coverage/

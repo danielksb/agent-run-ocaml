@@ -27,7 +27,25 @@ For safer runs, explicitly define and restrict the working directory to the smal
 - CLI: `--working-directory <path>`
 - Config: `working_directory = "/path/to/safe/root"`
 
+
 ## How To Run
+
+Install dependencies with `opam install . --deps-only --with-test --with-doc`
+
+## Test Coverage
+
+Generate coverage artifacts with `bisect_ppx`:
+
+Note: `bisect_ppx` currently resolves only for OCaml versions `< 5.4` in `opam-repository`.
+Use an OCaml `5.3.x` switch for coverage runs.
+
+```shell
+dune clean
+dune runtest --instrument-with bisect_ppx --force
+bisect-ppx-report html
+```
+
+Open `_coverage/index.html` to inspect the report.
 
 Build and run with `dune exec`:
 
@@ -112,4 +130,3 @@ dune exec -- agent-run --vendor gemini --skill .\skills\caveman.md --prompt "Use
 ```powershell
  "Caveman mode. Review the following code change and return a list of things which must be improved and which should be improved: \n" + (git show | Out-String) | dune exec -- agent-run --vendor openai --skill .\skills\caveman.md --prompt -
 ```
-

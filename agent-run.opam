@@ -11,12 +11,13 @@ doc: "https://github.com/danielksb/agent-run-ocaml"
 bug-reports: "https://github.com/username/reponame/issues"
 depends: [
   "dune" {>= "3.21"}
-  "ocaml" {>= "5.4"}
+  "ocaml" {>= "5.3"}
   "cohttp-lwt-unix" {>= "6.2"}
   "base-unix"
   "ppx_deriving_yojson" {>= "3.10"}
   "toml"
   "alcotest" {with-test}
+  "bisect_ppx" {with-test & "ocaml" < "5.4"}
   "odoc" {with-doc}
 ]
 build: [

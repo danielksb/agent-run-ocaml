@@ -20,12 +20,13 @@
  (synopsis "CLI-based LLM agent runner")
  (description "CLI-based LLM agent runner supporting OpenAI and Gemini APIs")
  (depends
-  (ocaml (>= 5.4))
+  (ocaml (>= 5.3))
   (cohttp-lwt-unix (>= 6.2))
   base-unix
   (ppx_deriving_yojson (>= 3.10))
   toml
-  (alcotest :with-test))
+  (alcotest :with-test)
+  (bisect_ppx (and :with-test (< ocaml 5.4))))
  (tags
   ("ai" "cli" "llm")))
 
