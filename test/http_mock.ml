@@ -31,7 +31,8 @@ let post_always_from_file ~response_status ~response_body_path =
 
     let post ~url:_ ~headers:_ ~body:_ =
       Lwt.return (response_status, response_body)
-  end in
+  end
+  in
   (module Client : Http_client.S)
 
 let pp_method (m : http_method) =
@@ -180,5 +181,6 @@ let make expectations =
     let get ~url ~headers = get_impl ~url ~headers
 
     let post ~url ~headers ~body = post_impl ~url ~headers ~body
-  end in
+  end
+  in
   ((module Client : Http_client.S), assert_all_matched)

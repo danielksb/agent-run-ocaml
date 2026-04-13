@@ -56,15 +56,14 @@ struct
 
   let execute_tool_call (tool_reg : Tool_registry.t)
       (tool_context : Tool.tool_context) (tc : tool_call) : tool_result Lwt.t =
-    let open Lwt in
     Logging.verbose
       (Printf.sprintf "Calling tool \"%s\" with %s" tc.name
          (Yojson.Safe.to_string tc.arguments) ) ;
-    let wrap_content content = return {name= tc.name; content; id= tc.id} in
+    let wrap_content content = Lwt.return {name= tc.name; content; id= tc.id} in
+    let ( let* ) = Lwt.bind in
     match Tool_registry.find_handler tool_reg tc.name with
     | Some handler -> (
-        handler tool_context tc.arguments
-        >>= fun result ->
+        let* result = handler tool_context tc.arguments in
         match result with
         | Ok r ->
             wrap_content r
@@ -74,16 +73,15 @@ struct
         wrap_content ("Unknown tool: " ^ tc.name)
 
   let send_request (agent : t) prompt =
-    let open Lwt in
     let headers = Vendor.request_headers agent in
     let url = Vendor.request_url agent in
     let registry = Tools.registry in
     let tool_context = agent.tool_context in
     let tools = Tool_registry.tools registry in
     let rec loop step messages =
+      let ( let* ) = Lwt.bind in
       let body = Vendor.request_body agent tools messages in
-      Http.post ~url ~headers ~body
-      >>= fun (_code, body_str) ->
+      let* _code, body_str = Http.post ~url ~headers ~body in
       match Vendor.parse_response body_str with
       | ErrorResponse msg ->
           Logging.verbose
@@ -101,8 +99,7 @@ struct
           let tool_results =
             List.map (execute_tool_call registry tool_context) tool_calls
           in
-          Lwt.all tool_results
-          >>= fun results ->
+          let* results = Lwt.all tool_results in
           let messages =
             List.fold_left
               (fun msgs tr -> msgs @ [Vendor.tool_message tr])

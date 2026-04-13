@@ -27,7 +27,7 @@ let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
-  | Ok args ->
+  | Ok args -> (
       let parsed_args =
         try
           let file_name =
@@ -41,12 +41,14 @@ let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
           Error ("Cannot call tool 'write_file': " ^ msg)
       in
       let working_directory = tool_context.working_directory in
-      Result.bind parsed_args (fun (file_name, content) ->
-          Result.bind (Path_guard.guard_path ~root:working_directory file_name)
-            (fun safe_file ->
-              try
-                Out_channel.with_open_text safe_file (fun out ->
-                    Out_channel.output_string out content ;
-                    Out_channel.flush out ;
-                    Ok ("File " ^ file_name ^ " was successfully written.") )
-              with Sys_error _ -> Error ("Cannot write file: " ^ file_name) ) )
+      let ( let* ) = Result.bind in
+      let* file_name, content = parsed_args in
+      let* safe_file =
+        Path_guard.guard_path ~root:working_directory file_name
+      in
+      try
+        Out_channel.with_open_text safe_file (fun out ->
+            Out_channel.output_string out content ;
+            Out_channel.flush out ;
+            Ok ("File " ^ file_name ^ " was successfully written.") )
+      with Sys_error _ -> Error ("Cannot write file: " ^ file_name) )

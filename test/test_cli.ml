@@ -79,14 +79,8 @@ let run_create_agent_config ?(cwd = "C:\\mock-cwd") ?(stdin = "") ?(env = [])
   CliImpl.create_agent_config ()
 
 let contains text pattern =
-  let text_len = String.length text in
-  let pattern_len = String.length pattern in
-  let rec loop i =
-    if i + pattern_len > text_len then false
-    else if String.sub text i pattern_len = pattern then true
-    else loop (i + 1)
-  in
-  if pattern_len = 0 then true else loop 0
+  try Str.search_forward (Str.regexp_string pattern) text 0 >= 0
+  with Not_found -> false
 
 let test_help_returns_usage () =
   with_temp_config "" (fun config_path ->

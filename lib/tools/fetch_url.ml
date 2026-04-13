@@ -36,7 +36,7 @@ module Make (Http : Http_client.S) = struct
 
   let fetch_body uri =
     let get_call = Http.get ~url:(Uri.to_string uri) ~headers:[] in
-    Lwt.( >>= ) get_call (fun (status, body) ->
+    Lwt.bind get_call (fun (status, body) ->
         if status >= 200 && status < 300 then Lwt.return @@ Ok body
         else
           Lwt.return

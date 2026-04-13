@@ -10,9 +10,10 @@ Prefer snapshot refs (`e15`) for stable interactions.
 
 ## Invocation
 
-- Global: `playwright-cli <command> [args] [options]`
-- Local: `npx playwright-cli <command> [args] [options]`
-- Named session: `playwright-cli -s=<session> <command> ...`
+Use "exec_command" tool to execute playwright:
+
+- Command: `npx playwright-cli <command> [args] [options]`
+- Command with named session: `npx playwright-cli -s=<session> <command> ...`
 
 ## Session Management (Required)
 
@@ -20,25 +21,13 @@ Prefer snapshot refs (`e15`) for stable interactions.
 - Reuse the same session name for every command in one task.
 - Start with `open` in that session, then continue all actions in the same session.
 - Do not call `close` unless the user explicitly asks to close the browser.
+- Use command `snapshot` after open the website to read the content of the website and get the snapshot ref for the next interaction.
 - In `agent-run` with `exec_command`, avoid `--persistent` by default because it can keep `open` alive and block the next tool call.
-- Use `--headed` on `open` so the browser window is visible while the task runs.
-- `open` can be long-running in headed mode. In `agent-run`, launch it in background so the next tool call can run.
 
-Background `open` commands:
-- Windows (PowerShell): `Start-Process -FilePath npx -ArgumentList 'playwright-cli','-s=todo','open','https://demo.playwright.dev/todomvc/','--headed'`
-- Linux/macOS (sh): `nohup npx playwright-cli -s=todo open https://demo.playwright.dev/todomvc/ --headed >/tmp/playwright-cli-open.log 2>&1 &`
+## Example
 
-Recommended pattern:
-- Windows: `Start-Process -FilePath npx -ArgumentList 'playwright-cli','-s=todo','open','https://demo.playwright.dev/todomvc/','--headed'`
-- Linux/macOS: `nohup npx playwright-cli -s=todo open https://demo.playwright.dev/todomvc/ --headed >/tmp/playwright-cli-open.log 2>&1 &`
-- `npx playwright-cli -s=todo type "Learn Ocaml"`
-- `npx playwright-cli -s=todo press Enter`
-- `npx playwright-cli -s=todo snapshot --filename=todo.yaml`
-
-## Example (Updated)
-
-1. Windows: `Start-Process -FilePath npx -ArgumentList 'playwright-cli','-s=todo','open','https://demo.playwright.dev/todomvc/','--headed'`
-2. Linux/macOS: `nohup npx playwright-cli -s=todo open https://demo.playwright.dev/todomvc/ --headed >/tmp/playwright-cli-open.log 2>&1 &`
+1. `npx playwright-cli -s=todo open https://demo.playwright.dev/todomvc/`
+2. `npx playwright-cli -s=todo snapshot`
 3. `npx playwright-cli -s=todo type "Buy groceries"`
 4. `npx playwright-cli -s=todo press Enter`
 5. `npx playwright-cli -s=todo type "Water flowers"`

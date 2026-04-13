@@ -19,7 +19,7 @@ let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
   match Tool.validate_arguments definition args with
   | Error _ as e ->
       e
-  | Ok args ->
+  | Ok args -> (
       let parsed_file =
         let open Yojson.Safe.Util in
         try
@@ -29,10 +29,8 @@ let run (tool_context : Tool.tool_context) (args : Yojson.Safe.t) =
           Error ("Cannot call tool 'read_file': " ^ msg)
       in
       let working_directory = tool_context.working_directory in
-      Result.bind parsed_file (fun file ->
-          try
-            Result.bind (Path_guard.guard_path ~root:working_directory file)
-              (fun safe_file ->
-                Result.ok
-                @@ In_channel.with_open_text safe_file In_channel.input_all )
-          with Sys_error _ -> Error ("Cannot read file: " ^ file) )
+      let ( let* ) = Result.bind in
+      let* file = parsed_file in
+      let* safe_file = Path_guard.guard_path ~root:working_directory file in
+      try In_channel.with_open_text safe_file In_channel.input_all |> Result.ok
+      with Sys_error _ -> Error ("Cannot read file: " ^ file) )
