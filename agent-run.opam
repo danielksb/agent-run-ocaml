@@ -2,15 +2,15 @@
 opam-version: "2.0"
 synopsis: "CLI-based LLM agent runner"
 description: "CLI-based LLM agent runner supporting OpenAI and Gemini APIs"
-maintainer: ["Daniel Kuschel"]
-authors: ["Daniel Kuschel"]
-license: "LICENSE"
+maintainer: ["Daniel Kuschel <danielkaes@duck.com>"]
+authors: ["Daniel Kuschel <danielkaes@duck.com>"]
+license: "Apache-2.0"
 tags: ["ai" "cli" "llm"]
-homepage: "https://github.com/username/reponame"
+homepage: "https://github.com/danielksb/agent-run-ocaml"
 doc: "https://github.com/danielksb/agent-run-ocaml"
-bug-reports: "https://github.com/username/reponame/issues"
+bug-reports: "https://github.com/danielksb/agent-run-ocaml/issues"
 depends: [
-  "dune" {>= "3.21"}
+  "dune" {>= "3.22"}
   "ocaml" {>= "5.3"}
   "cohttp-lwt-unix" {>= "6.2"}
   "base-unix"
@@ -34,5 +34,5 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/username/reponame.git"
+dev-repo: "git+https://github.com/danielksb/agent-run-ocaml.git"
 x-maintenance-intent: ["(latest)"]

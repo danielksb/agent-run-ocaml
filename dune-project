@@ -1,17 +1,17 @@
-(lang dune 3.21)
+(lang dune 3.22)
 
 (name agent-run)
 
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github danielksb/agent-run-ocaml))
 
-(authors "Daniel Kuschel")
+(authors "Daniel Kuschel <danielkaes@duck.com>")
 
-(maintainers "Daniel Kuschel")
+(maintainers "Daniel Kuschel <danielkaes@duck.com>")
 
-(license LICENSE)
+(license Apache-2.0)
 
 (documentation https://github.com/danielksb/agent-run-ocaml)
 

@@ -1,0 +1,40 @@
+﻿name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Release for ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: x86_64-linux
+          # - os: windows-latest
+          #   name: x86_64-windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.3"
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test --yes
+
+      - name: Build executable
+        run: opam exec -- dune build @install --release --only-packages agent-run
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: agent-run-${{ github.ref_name }}-${{matrix.name}}
+          path: _build/install/default
