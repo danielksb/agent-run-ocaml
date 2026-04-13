@@ -15,8 +15,8 @@ jobs:
         include:
           - os: ubuntu-latest
             name: x86_64-linux
-          # - os: windows-latest
-          #   name: x86_64-windows
+          - os: windows-latest
+            name: x86_64-windows
 
     steps:
       - name: Checkout
